@@ -1,0 +1,8 @@
+crewai
+langchain-community
+chromadb
+litellm
+pyyaml
+python-dotenv
+streamlit
+duckduckgo-search
