@@ -20,6 +20,7 @@ import streamlit as st
 import yaml
 from dotenv import load_dotenv
 from crewai import Crew
+import google.generativeai as genai
 
 from core.agent_parser import create_agents_from_yaml, create_tasks_from_yaml
 from core.git_importer import download_yaml_from_github
@@ -76,16 +77,57 @@ def save_config(crew_filename: str, config: dict) -> None:
             sort_keys=False,
         )
 
+@st.cache_data(ttl=3600)
+def get_available_models() -> list[str]:
+    """Récupère dynamiquement les modèles Gemini supportant la génération de contenu."""
+    api_key = os.getenv("GEMINI_API_KEY")
+    default_models = ["gemini/gemini-2.5-flash", "gemini/gemini-2.5-pro", "gemini/gemini-1.5-flash", "gemini/gemini-1.5-pro"]
+    
+    if not api_key:
+        st.warning("⚠️ Clé GEMINI_API_KEY absente. Utilisation des modèles par défaut.")
+        return default_models
+        
+    try:
+        genai.configure(api_key=api_key)
+        models = genai.list_models()
+        # Filtre les modèles supportant generateContent et formate pour LiteLLM
+        available = [
+            f"gemini/{m.name.replace('models/', '')}" 
+            for m in models 
+            if 'generateContent' in m.supported_generation_methods
+        ]
+        return available if available else default_models
+    except Exception as e:
+        st.warning(f"⚠️ Impossible de récupérer les modèles ({str(e)}). Utilisation des modèles par défaut.")
+        return default_models
+
 # ── Page Streamlit ───────────────────────────────────────────────────────────
 
 st.set_page_config(
     page_title="AgentTest — Orchestrateur IA",
-    page_icon="🤖",
+    page_icon="⚡",
     layout="wide",
 )
 
-st.title("🤖 AgentTest — Dashboard Multi-Crews")
-st.caption("Gérez vos équipes d'agents IA, configurez leurs tâches et lancez des orchestrations autonomes.")
+def inject_custom_css():
+    css_path = Path(__file__).resolve().parent / "ui" / "style.css"
+    if css_path.exists():
+        st.markdown(f"<style>{css_path.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
+
+inject_custom_css()
+
+st.markdown(
+    """
+    <div style='display: flex; align-items: center; gap: 12px; margin-bottom: 24px;'>
+        <div style='font-size: 2.5rem; background: linear-gradient(45deg, #2E66FF, #8A2BE2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;'>⚡</div>
+        <div>
+            <h1 style='margin: 0; padding: 0; font-size: 2rem;'>AgentTest</h1>
+            <p style='margin: 0; padding: 0; color: var(--text-secondary); font-size: 0.9rem;'>Orchestrateur IA • Dashboard Multi-Crews</p>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # Liste globale des crews
 all_crews = get_all_crews()
@@ -203,7 +245,10 @@ with tab_agent:
             with col1:
                 agent_name = st.text_input("Nom (identifiant unique)", placeholder="ex: coder")
                 agent_role = st.text_input("Rôle", placeholder="ex: Développeur Senior")
-                agent_llm = st.selectbox("Modèle LLM", options=["gemini/gemini-3.6-flash", "gemini/gemini-2.5-pro"])
+                
+                # Utilisation de la récupération dynamique
+                models_list = get_available_models()
+                agent_llm = st.selectbox("Modèle LLM", options=models_list)
             with col2:
                 agent_goal = st.text_area("But (Goal)", height=100)
                 agent_backstory = st.text_area("Background (Backstory)", height=100)
@@ -301,6 +346,16 @@ with tab_run:
         selected_crew_run = st.selectbox("Sélectionnez le Crew à exécuter", all_crews, key="select_crew_run")
         config_run = load_config(selected_crew_run)
         
+        # Gestion du max_rpm
+        st.markdown("### ⚙️ Paramètres d'exécution")
+        max_rpm = st.number_input(
+            "Limite de requêtes par minute (max_rpm)", 
+            min_value=1, 
+            max_value=100, 
+            value=15,
+            help="Utile pour éviter de dépasser le quota de l'API (Rate Limit)."
+        )
+        
         if not config_run.get("tasks"):
             st.warning(f"⚠️ Impossible de lancer : aucune tâche définie dans {selected_crew_run}.")
         else:
@@ -320,6 +375,7 @@ with tab_run:
                             tasks=tasks,
                             verbose=True,
                             memory=True,
+                            max_rpm=max_rpm, # Ajout de la limite de requêtes
                             embedder={
                                 "provider": "google-generativeai",
                                 "config": {
@@ -341,4 +397,16 @@ with tab_run:
 
                     except Exception as e:
                         sys.stdout = old_stdout
-                        st.error(f"❌ Erreur lors de l'exécution : {e}")
+                        error_str = str(e)
+                        
+                        # Gestion intelligente du Rate Limit (429)
+                        if "429" in error_str or "Rate Limit" in error_str or "Quota exceeded" in error_str:
+                            st.error("❌ Erreur 429 : Quota de l'API atteint (Rate Limit).")
+                            st.warning(
+                                "💡 **Solutions suggérées :**\n"
+                                "- Baissez la `Limite de requêtes par minute (max_rpm)` ci-dessus (essayez 5 ou 10).\n"
+                                "- Modifiez votre Crew pour utiliser un modèle plus léger (ex: `flash` au lieu de `pro`).\n"
+                                "- Patientez environ une minute avant de relancer."
+                            )
+                        else:
+                            st.error(f"❌ Erreur lors de l'exécution : {error_str}")
