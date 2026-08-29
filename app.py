@@ -22,7 +22,11 @@ from dotenv import load_dotenv
 from crewai import Crew
 import google.generativeai as genai
 
-from core.agent_parser import create_agents_from_yaml, create_tasks_from_yaml
+from core.agent_parser import (
+    create_agents_from_yaml,
+    create_tasks_from_yaml,
+    get_crew_settings_from_yaml
+)
 from core.git_importer import download_yaml_from_github
 from tools.custom_tools import (
     calculate_text_length,
@@ -197,8 +201,17 @@ with tab_new:
     
     with col_new_manual:
         st.subheader("📝 Création Manuelle")
-        new_crew_name = st.text_input("Nom du Crew (sans .yaml)", placeholder="ex: dev_team")
-        if st.button("🏗️ Créer le Crew vide", use_container_width=True):
+        with st.form("new_crew_form", clear_on_submit=True):
+            new_crew_name = st.text_input("Nom du Crew (sans .yaml)", placeholder="ex: dev_team")
+            
+            st.markdown("**Paramètres globaux**")
+            crew_process = st.selectbox("Processus d'exécution", options=["Séquentiel", "Hiérarchique"])
+            crew_memory = st.checkbox("Activer la mémoire", value=True)
+            crew_max_rpm = st.number_input("Limite RPM (max_rpm)", min_value=1, max_value=100, value=15)
+            
+            submitted_new = st.form_submit_button("🏗️ Créer le Crew", use_container_width=True)
+            
+        if submitted_new:
             if not new_crew_name.strip():
                 st.error("Le nom ne peut pas être vide.")
             else:
@@ -206,7 +219,16 @@ with tab_new:
                 if filename in all_crews:
                     st.error("Ce Crew existe déjà.")
                 else:
-                    save_config(filename, {"agents": [], "tasks": []})
+                    initial_config = {
+                        "crew_settings": {
+                            "process": crew_process,
+                            "memory": crew_memory,
+                            "max_rpm": crew_max_rpm
+                        },
+                        "agents": [],
+                        "tasks": []
+                    }
+                    save_config(filename, initial_config)
                     st.toast(f"Crew {filename} créé avec succès !")
                     st.rerun()
 
@@ -346,20 +368,34 @@ with tab_run:
         selected_crew_run = st.selectbox("Sélectionnez le Crew à exécuter", all_crews, key="select_crew_run")
         config_run = load_config(selected_crew_run)
         
+        config_path = CREWS_DIR / selected_crew_run
+        # Récupération dynamique des paramètres du YAML
+        crew_settings = get_crew_settings_from_yaml(config_path)
+        default_rpm = crew_settings.get("max_rpm", 15)
+        
         # Gestion du max_rpm
         st.markdown("### ⚙️ Paramètres d'exécution")
         max_rpm = st.number_input(
-            "Limite de requêtes par minute (max_rpm)", 
+            "Limite de requêtes par minute (surcharge max_rpm)", 
             min_value=1, 
             max_value=100, 
-            value=15,
-            help="Utile pour éviter de dépasser le quota de l'API (Rate Limit)."
+            value=default_rpm,
+            help="Surcharge temporaire de la limite définie dans le YAML."
         )
         
         if not config_run.get("tasks"):
             st.warning(f"⚠️ Impossible de lancer : aucune tâche définie dans {selected_crew_run}.")
         else:
-            if st.button("🔥 Lancer le Kickoff", use_container_width=True, type="primary"):
+            # Gestion de l'état de retry
+            if "retry_429" not in st.session_state:
+                st.session_state.retry_429 = False
+            
+            # Reset de l'état si on change de crew
+            if st.session_state.get("last_crew") != selected_crew_run:
+                st.session_state.retry_429 = False
+                st.session_state.last_crew = selected_crew_run
+
+            def run_kickoff(fallback_model=None):
                 with st.spinner(f"Exécution de {selected_crew_run} en cours... (Cela peut prendre plusieurs minutes)"):
                     try:
                         old_stdout = sys.stdout
@@ -367,14 +403,15 @@ with tab_run:
                         sys.stdout = captured
 
                         config_path = CREWS_DIR / selected_crew_run
-                        agents = create_agents_from_yaml(config_path, available_tools=AVAILABLE_TOOLS)
+                        agents = create_agents_from_yaml(config_path, available_tools=AVAILABLE_TOOLS, llm_override=fallback_model)
                         tasks = create_tasks_from_yaml(config_path, agents)
 
                         crew = Crew(
                             agents=agents,
                             tasks=tasks,
+                            process=crew_settings["process"],
                             verbose=True,
-                            memory=True,
+                            memory=crew_settings["memory"],
                             max_rpm=max_rpm, # Ajout de la limite de requêtes
                             embedder={
                                 "provider": "google-generativeai",
@@ -394,6 +431,9 @@ with tab_run:
 
                         with st.expander("📜 Logs d'exécution détaillés"):
                             st.code(captured.getvalue(), language="text")
+                            
+                        # En cas de succès, on efface le flag d'erreur
+                        st.session_state.retry_429 = False
 
                     except Exception as e:
                         sys.stdout = old_stdout
@@ -401,12 +441,25 @@ with tab_run:
                         
                         # Gestion intelligente du Rate Limit (429)
                         if "429" in error_str or "Rate Limit" in error_str or "Quota exceeded" in error_str:
-                            st.error("❌ Erreur 429 : Quota de l'API atteint (Rate Limit).")
-                            st.warning(
-                                "💡 **Solutions suggérées :**\n"
-                                "- Baissez la `Limite de requêtes par minute (max_rpm)` ci-dessus (essayez 5 ou 10).\n"
-                                "- Modifiez votre Crew pour utiliser un modèle plus léger (ex: `flash` au lieu de `pro`).\n"
-                                "- Patientez environ une minute avant de relancer."
-                            )
+                            st.session_state.retry_429 = True
+                            st.rerun()
                         else:
                             st.error(f"❌ Erreur lors de l'exécution : {error_str}")
+
+            if not st.session_state.retry_429:
+                if st.button("🔥 Lancer le Kickoff", use_container_width=True, type="primary"):
+                    run_kickoff()
+            else:
+                st.error("❌ Erreur 429 : Quota de l'API atteint (Rate Limit).")
+                st.warning("💡 **Votre modèle actuel a atteint sa limite. Choisissez un modèle de secours pour relancer l'agent :**")
+                
+                fallback = st.selectbox("Modèle de secours", options=get_available_models(), key="fallback_model")
+                
+                col_retry, col_cancel = st.columns(2)
+                with col_retry:
+                    if st.button("🚀 Relancer avec ce modèle", type="primary", use_container_width=True):
+                        run_kickoff(fallback_model=fallback)
+                with col_cancel:
+                    if st.button("❌ Annuler", use_container_width=True):
+                        st.session_state.retry_429 = False
+                        st.rerun()

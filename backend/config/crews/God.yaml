@@ -1,0 +1,97 @@
+crew_settings:
+  process: Séquentiel
+  memory: false
+  max_rpm: 10
+agents:
+- name: Architecte_Logiciel
+  role: Expert en rétro-ingénierie et analyse de code source
+  goal: Cloner le dépôt GitHub fourni, explorer ses fichiers clés, et comprendre la
+    logique et l'architecture globale du projet.
+  backstory: Développeur vétéran, tu comprends n'importe quelle base de code en quelques
+    minutes en ciblant le README, les configs et les points d'entrée.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - clone_github_repo
+  - read_file
+  verbose: true
+  allow_delegation: false
+- name: Redacteur_Technique
+  role: Spécialiste en documentation technique
+  goal: Transformer l'analyse technique brute en une documentation claire et accessible.
+  backstory: Tu structures les explications techniques pour offrir une vue d'ensemble
+    claire sans jargon inutile.
+  llm: openai/qwen-3.6-35b-instruct
+  tools: []
+  verbose: true
+  allow_delegation: false
+- name: Analyste_Agent
+  role: Détecteur de composants d'agents IA
+  goal: Identifier si le dépôt contient un agent IA et fournir le listing exact des
+    fichiers où se trouvent ses prompts et ses outils.
+  backstory: Tu sais localiser les invites de commandes système (system prompts),
+    les configurations de persona, les déclarations de fonctions et les outils au
+    sein d'un dépôt.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - read_file
+  verbose: true
+  allow_delegation: false
+- name: Ingenieur_YAML
+  role: Spécialiste en configuration CrewAI
+  goal: Lire les fichiers sources indiqués par l'Analyste pour générer un fichier
+    YAML d'agent 100% fidèle au code original.
+  backstory: Tu inspectes directement le code source aux chemins précisés pour transcrire
+    fidèlement le rôle, le backstory et les outils dans un schéma YAML valide.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - read_file
+  verbose: true
+  allow_delegation: false
+tasks:
+- description: 'La demande de l''utilisateur contient le lien GitHub : "{message}".  1.
+    Utilise ''clone_github_repo'' pour cloner ce dépôt dans ''analyse_temp''. 2. Utilise
+    ''read_file'' pour lire le README.md et les fichiers d''entrée principaux.
+
+    '
+  expected_output: 'Un rapport technique sur la stack technologique, l''arborescence
+    et le point d''entrée du projet.
+
+    '
+  agent: Architecte_Logiciel
+- description: 'À partir du rapport de l''Architecte Logiciel, rédige une synthèse
+    claire du fonctionnement du dépôt.
+
+    '
+  expected_output: 'Un document Markdown avec : Vue d''ensemble, Technologies, Architecture
+    et Exécution.
+
+    '
+  agent: Redacteur_Technique
+- description: 'Analyse la synthèse et utilise ''read_file'' pour inspecter les fichiers
+    suspects dans ''analyse_temp''. Détermine si le projet contient un agent IA. Si
+    OUI, liste obligatoirement : 1. Le chemin exact des fichiers contenant le prompt/rôle
+    (ex: analyse_temp/prompts.py). 2. Le chemin exact des outils/fonctions utilisés
+    par l''agent. 3. Les extraits de code pertinents identifiés.
+
+    '
+  expected_output: 'Commence obligatoirement par "CONCLUSION: OUI" ou "CONCLUSION:
+    NON". Si OUI, fournis la liste des chemins de fichiers précis et le mapping des
+    composants trouvés. Si NON, explique brièvement pourquoi aucun agent n''est extractible.
+
+    '
+  agent: Analyste_Agent
+- description: "Lis le rapport de l'Analyste_Agent. - Si \"CONCLUSION: OUI\" : Utilise\
+    \ 'read_file' pour vérifier les prompts et fonctions dans 'analyse_temp'.  Génère\
+    \ ensuite la configuration YAML de l'agent.  TU DOIS IMPÉRATIVEMENT RESPECTER\
+    \ LA STRUCTURE YAML SUIVANTE, SANS AJOUTER DE CLÉS INCONNUES :\n- name: 'Nom_Agent_Sans_Espace'\n\
+    \  role: 'Son rôle précis'\n  goal: 'Son objectif principal'\n  backstory: 'Son\
+    \ contexte et son comportement'\n  llm: 'qwen-3.6-35b-instruct'\n  tools:\n  -\
+    \ nom_outil_1\n  - nom_outil_2\n  verbose: true\n  allow_delegation: false\n \
+    \ \nAttention : Pour la clé 'tools', ne liste que les NOMS des outils sous forme\
+    \ de tirets. Ne détaille pas leurs paramètres. - Si \"CONCLUSION: NON\" : Écris\
+    \ \"Aucun agent n'a pu être extrait de ce dépôt.\"\n"
+  expected_output: 'Un bloc YAML propre et complet de l''agent extrait (avec name,
+    role, goal, backstory, tools), ou le message de refus.
+
+    '
+  agent: Ingenieur_YAML

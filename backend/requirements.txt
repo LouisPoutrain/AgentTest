@@ -1,0 +1,13 @@
+crewai
+langchain-community
+chromadb
+litellm
+pyyaml
+python-dotenv
+duckduckgo-search
+google-generativeai
+requests
+fastapi
+uvicorn[standard]
+pydantic
+z
