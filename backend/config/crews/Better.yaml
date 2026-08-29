@@ -2,63 +2,80 @@ crew_settings:
   process: Séquentiel
   memory: false
   max_rpm: 10
-
 agents:
 - name: Analyste_Stack
   role: Rétro-ingénieur et extracteur de contexte technique
-  goal: Analyser le dossier du projet pour identifier la stack technologique exacte, les patterns utilisés et les limites de l'architecture actuelle.
-  backstory: "Tu es un expert capable de comprendre l'ADN d'un projet en quelques lectures. Tu utilises tes outils pour trouver les dépendances (ex: requirements.txt, package.json) et la structure globale, afin de fournir un résumé technique parfait."
+  goal: Analyser le dossier du projet pour identifier la stack technologique exacte,
+    les patterns utilisés et les limites de l'architecture actuelle.
+  backstory: 'Tu es un expert capable de comprendre l''ADN d''un projet en quelques
+    lectures. Tu utilises tes outils pour trouver les dépendances (ex: requirements.txt,
+    package.json) et la structure globale, afin de fournir un résumé technique parfait.'
   llm: openai/qwen-3.6-35b-instruct
   tools:
   - list_directory
   - read_file
   verbose: true
   allow_delegation: false
-
 - name: Chercheur_Veille_Tech
   role: Spécialiste en R&D et veille technologique
-  goal: Chercher sur le web les meilleures pratiques, les nouveaux frameworks et les architectures de référence (état de l'art) correspondant à la stack identifiée.
-  backstory: Tu es toujours à la pointe de la technologie. À partir d'une stack donnée, tu fouilles le web (articles, documentation officielle, forums) pour trouver comment les géants de la tech résolvent les limites de cette architecture aujourd'hui.
-  llm: openai/mistral-medium-latest
+  goal: Chercher sur le web les meilleures pratiques, les nouveaux frameworks et les
+    architectures de référence (état de l'art) correspondant à la stack identifiée.
+  backstory: Tu es toujours à la pointe de la technologie. À partir d'une stack donnée,
+    tu fouilles le web (articles, documentation officielle, forums) pour trouver comment
+    les géants de la tech résolvent les limites de cette architecture aujourd'hui.
+  llm: openai/qwen-3.6-35b-instruct
   tools:
   - web_search
   verbose: true
   allow_delegation: false
-
 - name: Architecte_Systeme
   role: Architecte Cloud & Logiciel Visionnaire
-  goal: Fusionner l'analyse du projet actuel et les recherches web pour rédiger une proposition concrète d'amélioration et d'innovation architecturale.
-  backstory: Tu es un architecte pragmatique mais innovant. Tu sais justifier chaque changement proposé par des sources fiables. Tu rédiges des propositions d'évolution claires, incluant les avantages, les outils recommandés et les étapes de migration.
+  goal: Fusionner l'analyse du projet actuel et les recherches web pour rédiger une
+    proposition concrète d'amélioration et d'innovation architecturale.
+  backstory: Tu es un architecte pragmatique mais innovant. Tu sais justifier chaque
+    changement proposé par des sources fiables. Tu rédiges des propositions d'évolution
+    claires, incluant les avantages, les outils recommandés et les étapes de migration.
   llm: openai/qwen-3.6-35b-instruct
   tools:
   - write_file
   verbose: true
   allow_delegation: false
-
 tasks:
-- description: >
-    L'utilisateur te fournit le chemin du projet : "{message}".
-    1. Utilise 'list_directory' pour explorer l'arborescence.
-    2. Utilise 'read_file' pour lire UNIQUEMENT les 3 fichiers de configuration principaux (ex: package.json, requirements.txt, docker-compose.yml).
-    3. Ne lis JAMAIS les autres fichiers de code source complet, ni de logs, ni package-lock.json.
-    4. Rédige un diagnostic clair de l'existant : que fait le projet et comment est-il structuré ?
-  expected_output: >
-    Un diagnostic technique détaillé listant les technologies utilisées et le pattern architectural actuel.
+- description: 'L''utilisateur te fournit le chemin du projet : "{message}". 1. Utilise
+    ''list_directory'' pour explorer l''arborescence. 2. Utilise ''read_file'' pour
+    lire UNIQUEMENT les 3 fichiers de configuration principaux (ex: package.json,
+    requirements.txt, docker-compose.yml). 3. Ne lis JAMAIS les autres fichiers de
+    code source complet, ni de logs, ni package-lock.json. 4. Rédige un diagnostic
+    clair de l''existant : que fait le projet et comment est-il structuré ?
+
+    '
+  expected_output: 'Un diagnostic technique détaillé listant les technologies utilisées
+    et le pattern architectural actuel.
+
+    '
   agent: Analyste_Stack
+- description: 'À partir du diagnostic de l''Analyste, utilise ''web_search'' pour
+    trouver l''état de l''art actuel. 1. Cherche les "best practices" et les architectures
+    modernes pour cette stack spécifique. 2. Trouve 2 ou 3 références de qualité (articles,
+    repos GitHub de référence, docs) qui montrent comment améliorer ce type de projet
+    (scalabilité, maintenabilité, nouveautés).
 
-- description: >
-    À partir du diagnostic de l'Analyste, utilise 'web_search' pour trouver l'état de l'art actuel.
-    1. Cherche les "best practices" et les architectures modernes pour cette stack spécifique.
-    2. Trouve 2 ou 3 références de qualité (articles, repos GitHub de référence, docs) qui montrent comment améliorer ce type de projet (scalabilité, maintenabilité, nouveautés).
-  expected_output: >
-    Un rapport de recherche contenant les tendances actuelles, les nouveaux outils recommandés et les liens de référence trouvés sur le web.
+    '
+  expected_output: 'Un rapport de recherche contenant les tendances actuelles, les
+    nouveaux outils recommandés et les liens de référence trouvés sur le web.
+
+    '
   agent: Chercheur_Veille_Tech
+- description: 'En combinant le diagnostic initial et les recherches web, rédige une
+    proposition d''évolution architecturale. 1. Propose 2 à 3 améliorations majeures
+    (ex: refacto vers des micro-services, ajout d''une nouvelle lib, changement de
+    design pattern). 2. Cite les références web trouvées par le chercheur pour justifier
+    tes choix. 3. Utilise ''write_file'' pour sauvegarder ce document dans le dossier
+    "{message}" sous le nom ''ARCHITECTURE_PROPOSAL.md''.
 
-- description: >
-    En combinant le diagnostic initial et les recherches web, rédige une proposition d'évolution architecturale.
-    1. Propose 2 à 3 améliorations majeures (ex: refacto vers des micro-services, ajout d'une nouvelle lib, changement de design pattern).
-    2. Cite les références web trouvées par le chercheur pour justifier tes choix.
-    3. Utilise 'write_file' pour sauvegarder ce document dans le dossier "{message}" sous le nom 'ARCHITECTURE_PROPOSAL.md'.
-  expected_output: >
-    Un message confirmant la création du fichier 'ARCHITECTURE_PROPOSAL.md', qui contient le plan de match innovant pour le projet.
+    '
+  expected_output: 'Un message confirmant la création du fichier ''ARCHITECTURE_PROPOSAL.md'',
+    qui contient le plan de match innovant pour le projet.
+
+    '
   agent: Architecte_Systeme

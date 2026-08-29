@@ -38,7 +38,10 @@ def web_search(query: str) -> str:
     """Effectue une recherche sur le web via DuckDuckGo et retourne les résultats."""
     try:
         search = DuckDuckGoSearchRun()
-        return search.run(query)
+        result = search.run(query)
+        if len(result) > 10000:
+            return result[:10000] + "\n\n[... RÉSULTAT TRONQUÉ POUR RAISONS DE SÉCURITÉ DE CONTEXTE ...]"
+        return result
     except Exception as e:
         return f"Erreur lors de la recherche web : {str(e)}"
 
@@ -50,7 +53,10 @@ def read_file(file_path: str) -> str:
         return f"Erreur de sécurité : L'accès au chemin '{file_path}' est interdit en dehors du répertoire de travail."
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            return f.read()
+            content = f.read()
+            if len(content) > 10000:
+                return content[:10000] + "\n\n[... CONTENU TRONQUÉ POUR RAISONS DE SÉCURITÉ DE CONTEXTE ...]"
+            return content
     except Exception as e:
         return f"Erreur lors de la lecture du fichier '{file_path}' : {str(e)}"
 
@@ -310,8 +316,12 @@ def list_directory(directory_path: str) -> str:
         files.sort()
         
         result = [f"Contenu de '{directory_path}' :"]
-        result.extend(folders)
-        result.extend(files)
+        all_items = folders + files
+        if len(all_items) > 100:
+            result.extend(all_items[:100])
+            result.append(f"\n... (et {len(all_items) - 100} autres éléments cachés pour protéger le contexte)")
+        else:
+            result.extend(all_items)
         
         return "\n".join(result) if len(result) > 1 else "Le dossier est vide."
         
