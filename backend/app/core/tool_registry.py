@@ -7,6 +7,8 @@ Point d'entrée unique pour résoudre les outils par leur nom.
 
 from __future__ import annotations
 
+from app.core.tools.file_editor import FileEditorTool
+from app.core.tools.terminal_runner import TerminalRunnerTool
 from app.tools.custom_tools import (
     calculate_text_length,
     web_search,
@@ -25,6 +27,10 @@ from app.tools.custom_tools import (
     generate_archify_diagram,
 )
 
+# Instancier les nouveaux outils
+file_editor = FileEditorTool()
+terminal_runner = TerminalRunnerTool()
+
 AVAILABLE_TOOLS: dict[str, object] = {
     "calculate_text_length": calculate_text_length,
     "web_search": web_search,
@@ -41,6 +47,9 @@ AVAILABLE_TOOLS: dict[str, object] = {
     "list_directory": list_directory,
     "run_test_command": run_test_command,
     "generate_archify_diagram": generate_archify_diagram,
+    # Nouveaux outils
+    "file_editor": file_editor,
+    "terminal_runner": terminal_runner,
 }
 
 def get_tool_names() -> list[str]:

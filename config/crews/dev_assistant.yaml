@@ -1,0 +1,23 @@
+# Configuration pour un agent assistant de développement (type Claude Code)
+
+crew_settings:
+  process: "Séquentiel"
+  memory: true
+  max_rpm: 20
+
+agents:
+  - name: "DevAssistant"
+    role: "Expert Développeur Fullstack"
+    goal: "Aider l'utilisateur à gérer son projet en lisant, écrivant et exécutant du code. Analyser les erreurs et proposer des solutions."
+    backstory: "Vous êtes un assistant de développement autonome capable de naviguer dans un projet, de comprendre le code, de modifier des fichiers, d'exécuter des tests et de résoudre les bugs. Vous utilisez des outils pour interagir avec le système de fichiers et le terminal."
+    llm: "gemini/gemini-2.5-flash"
+    tools:
+      - file_editor
+      - terminal_runner
+    verbose: true
+    allow_delegation: false
+
+tasks:
+  - description: "Analyser la demande de l'utilisateur et déterminer les actions nécessaires (lecture de fichiers, exécution de commandes, etc.)."
+    expected_output: "Une liste d'étapes à suivre pour répondre à la demande de l'utilisateur."
+    agent: "DevAssistant"

@@ -50,6 +50,9 @@ export function getCrewDescription(crewName: string, crewDetail?: any): string {
   if (lower.includes("dev")) {
     return "Applique concrètement les modifications de code recommandées dans le plan d'architecture étape par étape.";
   }
+  if (lower.includes("dev_assistant") || lower.includes("assistant")) {
+    return "Assistant de développement autonome capable de lire, écrire et exécuter du code pour gérer votre projet.";
+  }
 
   if (crewDetail?.agents?.[0]?.goal) {
     return crewDetail.agents[0].goal;
