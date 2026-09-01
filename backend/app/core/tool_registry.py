@@ -21,6 +21,8 @@ from app.tools.custom_tools import (
     execute_entrypoint,
     improve_fn,
     list_directory,
+    run_test_command,
+    generate_archify_diagram,
 )
 
 AVAILABLE_TOOLS: dict[str, object] = {
@@ -37,6 +39,8 @@ AVAILABLE_TOOLS: dict[str, object] = {
     "execute_entrypoint": execute_entrypoint,
     "improve_fn": improve_fn,
     "list_directory": list_directory,
+    "run_test_command": run_test_command,
+    "generate_archify_diagram": generate_archify_diagram,
 }
 
 def get_tool_names() -> list[str]:
