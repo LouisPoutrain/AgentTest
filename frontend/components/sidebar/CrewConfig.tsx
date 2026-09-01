@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Settings, Users, CheckSquare, Plus, Trash2, Pencil, Save, X, ChevronDown, ChevronRight } from "lucide-react";
+import { Settings, Users, CheckSquare, Plus, Trash2, Pencil, Save, X, ChevronDown, ChevronRight, Zap } from "lucide-react";
 import type { CrewDetail, AgentConfig, TaskConfig } from "@/lib/types";
 import {
   updateCrewSettings,
@@ -28,92 +28,7 @@ interface CrewConfigProps {
   onUpdate?: (updated: CrewDetail) => void;
 }
 
-/* ── LLM Picker Modal ────────────────────────────────────────────────────── */
-
-function ModelPickerModal({
-  currentModel,
-  models,
-  onSelect,
-}: {
-  currentModel: string;
-  models: string[];
-  onSelect: (model: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-
-  const ollamaModels = models.filter(m => m.startsWith("ollama/"));
-  const geminiModels = models.filter(m => m.startsWith("gemini/"));
-  const customModels = models.filter(m => m.startsWith("openai/"));
-
-  const filterModels = (list: string[]) => 
-    list.filter(m => m.toLowerCase().includes(search.toLowerCase()));
-
-  const filteredOllama = filterModels(ollamaModels);
-  const filteredGemini = filterModels(geminiModels);
-  const filteredCustom = filterModels(customModels);
-
-  const ModelList = ({ title, icon, list }: { title: string, icon: React.ReactNode, list: string[] }) => {
-    if (list.length === 0 && search === "") return null;
-    return (
-      <div className="space-y-2">
-        <h4 className="text-sm font-semibold text-text-secondary flex items-center gap-2">
-          <span>{icon}</span> {title} ({list.length})
-        </h4>
-        {list.length === 0 ? (
-          <div className="text-xs text-text-secondary italic">Aucun modèle trouvé.</div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {list.map(m => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => {
-                  onSelect(m);
-                  setOpen(false);
-                }}
-                className={`flex items-center text-left px-3 py-2 rounded-md border text-sm transition-all ${
-                  currentModel === m
-                    ? "bg-accent/10 border-accent text-accent font-medium"
-                    : "bg-bg-primary border-border text-text-primary hover:border-text-secondary"
-                }`}
-              >
-                <div className="truncate w-full">{m.replace(/^(ollama|gemini|openai)\//, "")}</div>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger className="w-full h-8 px-3 text-sm bg-bg-tertiary border border-border rounded-md text-left flex items-center justify-between hover:border-text-secondary transition-colors truncate">
-        <span className="truncate">{currentModel.replace(/^(ollama|gemini|openai)\//, "")}</span>
-        <ChevronDown size={14} className="opacity-50 shrink-0 ml-2" />
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl bg-bg-secondary border-border p-0 overflow-hidden flex flex-col text-text-primary gap-0">
-        <DialogHeader className="p-4 border-b border-border shrink-0 bg-bg-primary">
-          <DialogTitle className="text-lg">Sélectionner un modèle LLM</DialogTitle>
-          <div className="mt-2">
-            <Input
-              placeholder="Rechercher un modèle..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="h-9 bg-bg-tertiary border-border"
-            />
-          </div>
-        </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-4 space-y-6 max-h-[60vh]">
-          {customModels.length > 0 && <ModelList title="Serveur Distant (Custom API)" icon="🌐" list={filteredCustom} />}
-          <ModelList title="Modèles Locaux (Ollama)" icon="🦙" list={filteredOllama} />
-          <ModelList title="Google Gemini (Cloud)" icon="✨" list={filteredGemini} />
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
+import { ModelPickerModal } from "@/components/chat/ModelPickerModal";
 
 /* ── Inline Agent Editor ─────────────────────────────────────────────────── */
 
@@ -258,7 +173,7 @@ function TaskEditor({
       <div className="space-y-1">
         <Label className="text-xs">Agent assigné</Label>
         {agentNames.length > 0 ? (
-          <Select value={agent} onValueChange={setAgent}>
+          <Select value={agent} onValueChange={(val) => val && setAgent(val)}>
             <SelectTrigger className="h-8 text-sm bg-bg-tertiary border-border"><SelectValue /></SelectTrigger>
             <SelectContent>
               {agentNames.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
@@ -418,7 +333,7 @@ export function CrewConfig({ crewDetail: initialDetail, onUpdate }: CrewConfigPr
       <DialogContent className="max-w-[95vw] sm:max-w-[95vw] w-[95vw] sm:w-[1200px] h-[90vh] bg-bg-secondary border-border p-0 overflow-hidden flex flex-col text-text-primary gap-0">
         <DialogHeader className="p-6 border-b border-border shrink-0">
           <DialogTitle className="text-xl flex items-center gap-2">
-            <span className="text-accent">⚡</span> {crew.name}
+            <Zap className="h-4 w-4 text-accent fill-current" /> {crew.name}
           </DialogTitle>
         </DialogHeader>
 
@@ -442,7 +357,7 @@ export function CrewConfig({ crewDetail: initialDetail, onUpdate }: CrewConfigPr
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <Label className="text-xs">Processus</Label>
-                        <Select value={settingsProcess} onValueChange={setSettingsProcess}>
+                        <Select value={settingsProcess} onValueChange={(val) => val && setSettingsProcess(val as "Séquentiel" | "Hiérarchique")}>
                           <SelectTrigger className="h-8 text-sm bg-bg-tertiary border-border"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="Séquentiel">Séquentiel</SelectItem>
@@ -476,7 +391,7 @@ export function CrewConfig({ crewDetail: initialDetail, onUpdate }: CrewConfigPr
                       </div>
                       <div className="bg-bg-tertiary p-3 rounded-lg border border-border">
                         <div className="text-text-secondary text-xs mb-1">Mémoire</div>
-                        <div className="font-medium">{crew.crew_settings?.memory ? "✅ On" : "❌ Off"}</div>
+                        <div className="font-medium">{crew.crew_settings?.memory ? "Actif" : "Désactivé"}</div>
                       </div>
                       <div className="bg-bg-tertiary p-3 rounded-lg border border-border">
                         <div className="text-text-secondary text-xs mb-1">RPM</div>
@@ -572,7 +487,7 @@ export function CrewConfig({ crewDetail: initialDetail, onUpdate }: CrewConfigPr
                           if (ag) handleSaveAgent(ag);
                         }}>
                           <SelectTrigger className="w-full h-full flex items-center justify-center gap-2 p-3 rounded-lg border border-dashed border-border hover:border-accent hover:bg-bg-tertiary/30 text-text-secondary hover:text-accent text-sm transition-all bg-transparent shadow-none focus:ring-0">
-                            <SelectValue placeholder="📥 Importer un agent" />
+                            <SelectValue placeholder="Importer un agent existant" />
                           </SelectTrigger>
                           <SelectContent>
                             {allExistingAgents.map(a => (

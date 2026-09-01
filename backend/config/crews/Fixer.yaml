@@ -1,0 +1,73 @@
+crew_settings:
+  process: Séquentiel
+  memory: false
+  max_rpm: 10
+
+agents:
+- name: Diagnostiqueur_Anomalies
+  role: Analyste Senior des Retours de Review & Tests
+  goal: Lire les rapports CODE_REVIEW.md et TEST_REPORT.md du projet pour dresser un plan d'action chirurgical de correction fichier par fichier.
+  backstory: >
+    Expert en diagnostic et résolution de bugs, tu analyses les rapports d'audit de sécurité ('CODE_REVIEW.md')
+    et les rapports de tests ('TEST_REPORT.md') situés dans le dossier du projet. Tu identifies précisément
+    les failles critiques, les bugs d'exécution, les types manquants et les erreurs de logique à corriger en priorité.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - list_directory
+  - read_file
+  verbose: true
+  allow_delegation: false
+
+- name: Lead_Fixer_Engineer
+  role: Lead Développeur Correcteur & Refactoring
+  goal: Lire le code source des fichiers problématiques, appliquer les correctifs nécessaires, réécrire le code propre via write_file et valider avec run_test_command.
+  backstory: >
+    Développeur expert en chirurgie de code et résolution de bugs complexes.
+    Tu lis les fichiers sources à corriger avec 'read_file', appliques les meilleures pratiques pour corriger
+    les anomalies sans casser l'existant, puis sauvegardes les fichiers corrigés avec 'write_file'.
+    Tu relances ensuite les tests avec 'run_test_command' pour vérifier que tout est au vert,
+    puis rédiges le journal des modifications 'CHANGELOG_FIXES.md' dans le dossier du projet.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - read_file
+  - write_file
+  - run_test_command
+  verbose: true
+  allow_delegation: false
+  max_iter: 50
+
+tasks:
+- description: >
+    L'utilisateur te fournit le chemin du projet à réparer : "{message}".
+
+    1. Utilise 'read_file' pour lire les documents d'analyse dans "{message}" :
+       - "{message}/CODE_REVIEW.md" (audit de sécurité et architecture)
+       - "{message}/TEST_REPORT.md" (anomalies et résultats réels de tests)
+       (Si l'un des fichiers est absent, base-toi sur le document disponible ou explore avec 'list_directory').
+    2. Dresse une liste priorisée des fichiers sources exacts à corriger (du plus critique au mineur).
+    3. Pour chaque fichier, précise le problème identifié et la solution technique à implémenter.
+  agent: Diagnostiqueur_Anomalies
+  expected_output: >
+    Un plan d'action de correction structuré listant les fichiers à modifier et les correctifs à apporter.
+
+- description: >
+    À partir du plan d'action du Diagnostiqueur :
+
+    1. ÉTAPE 1 - APPLICATION CHIRURGICALE DES CORRECTIFS :
+       - Pour chaque fichier listé dans le plan :
+         * Utilise 'read_file' pour lire son contenu actuel dans "{message}/...".
+         * Applique les corrections nécessaires (sécurité, gestion d'erreurs, types TypeScript, logique métier, validation Zod, compatibilité des imports).
+         * Utilise 'write_file' pour enregistrer le fichier corrigé à son emplacement exact dans "{message}/...".
+
+    2. ÉTAPE 2 - RE-TESTING DE VALIDATION :
+       - Utilise 'run_test_command' avec project_path: "{message}" et command: "npx vitest run" (ou "npm test" / "npx tsc --noEmit") pour vérifier que les erreurs ont disparu.
+
+    3. ÉTAPE 3 - JOURNAL DES MODIFICATIONS :
+       - Utilise 'write_file' pour générer un fichier "{message}/CHANGELOG_FIXES.md" récapitulant :
+         * Liste de tous les fichiers modifiés et corrigés
+         * Détail des vulnérabilités / bugs résolus
+         * Résultat du re-run des tests (succès confirmé)
+         * Recommandations finales.
+  agent: Lead_Fixer_Engineer
+  expected_output: >
+    Confirmation de l'outil 'write_file' pour chaque fichier source corrigé, validation du re-test via 'run_test_command' et création du rapport '{message}/CHANGELOG_FIXES.md'.

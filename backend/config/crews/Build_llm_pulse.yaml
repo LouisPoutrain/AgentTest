@@ -1,0 +1,65 @@
+crew_settings:
+  process: Sequential
+  memory: false
+  max_rpm: 10
+
+agents:
+- name: FullStack_Developer
+  role: Ingénieur Développeur FullStack
+  goal: Implémenter l'intégralité du code source applicatif (backend, frontend, styles, configs) via write_file dans ../llm_pulse/.
+  backstory: Développeur expérimenté et méthodique, tu écris du code propre, typé et prêt pour la production sans aucun placeholder.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - read_file
+  - write_file
+
+tasks:
+- description: >
+    PHASE 1 : FONDATIONS, CONFIGURATION, BASE DE DONNÉES & BACKEND API
+    Développe tous les fichiers de configuration, schémas de base de données, bibliothèques serveur et routes API dans '../llm_pulse/'.
+    Tu DOIS utiliser 'write_file' pour chaque fichier.
+    
+    Tâches spécifiques :
+    1. Créer `pyproject.toml` avec les dépendances (typer, httpx, pyyaml, pydantic, pytest).
+    2. Créer `llm_pulse/__init__.py`, `llm_pulse/__main__.py`.
+    3. Créer `llm_pulse/cli.py` avec Typer (commande run, options --config, --output, --dry-run, --endpoint, --api-key, --model).
+    4. Créer `llm_pulse/models/config.py` (Pydantic classes for TestConfig, SafetyTest, FormatTest).
+    5. Créer `llm_pulse/models/results.py` (Pydantic classes for TestResult, TestRun with calculated properties).
+    6. Créer `config.example.yaml`.
+    7. Créer `llm_pulse/clients/base.py` (Abstract base client).
+    8. Créer `llm_pulse/clients/llm_client.py` (httpx AsyncClient implementation with retry logic).
+    9. Créer `llm_pulse/utils/rate_limiter.py` (Asyncio Semaphore and backoff logic).
+    10. Créer `llm_pulse/core/tests.py` (Test suite definitions and prompt templates).
+    11. Créer `llm_pulse/core/engine.py` (LLMPulseEngine orchestration with asyncio.gather).
+    12. Créer `llm_pulse/core/reporter.py` (Markdown generation logic).
+    13. Create `llm_pulse/utils/helpers.py`.
+    14. Create `llm_pulse/core/__init__.py`, `llm_pulse/clients/__init__.py`, `llm_pulse/models/__init__.py`, `llm_pulse/utils/__init__.py`.
+
+    Tu DOIS utiliser 'write_file' avec le chemin relatif '../llm_pulse/<fichier>' pour créer physiquement le code sur le disque.
+    Interdis formellement les placeholders ('// TODO' ou code incomplet).
+  agent: FullStack_Developer
+  expected_output: >
+    Confirmation de l'outil 'write_file' pour chaque fichier backend et configuration généré.
+
+- description: >
+    PHASE 2 : FRONTEND, GESTION D'ÉTAT & INTERFACE UTILISATEUR
+    Développe tous les composants UI, layouts, styles, stores et pages interactives dans '../llm_pulse/'.
+    Tu DOIS utiliser 'write_file' pour chaque fichier.
+
+    Tâches spécifiques :
+    1. Créer `README.md` avec documentation d'installation et d'usage.
+    2. Créer `.gitignore`.
+    3. Créer `LICENSE`.
+    4. Créer `tests/__init__.py`.
+    5. Créer `tests/test_engine.py` (Mock httpx, verify metrics).
+    6. Créer `tests/test_client.py` (Mock responses, verify latency).
+    7. Créer `tests/test_reporter.py` (Verify markdown structure).
+    8. Créer `requirements-dev.txt`.
+    9. Finaliser `llm_pulse/__main__.py` to ensure it calls cli correctly.
+    10. Ensure all type hints are correct and code is PEP8 compliant.
+
+    Tu DOIS utiliser 'write_file' avec le chemin relatif '../llm_pulse/<fichier>' pour créer physiquement le code sur le disque.
+    Interdis formellement les placeholders ('// TODO' ou code incomplet).
+  agent: FullStack_Developer
+  expected_output: >
+    Confirmation de l'outil 'write_file' pour chaque composant et fichier frontend généré.

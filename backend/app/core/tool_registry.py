@@ -25,6 +25,7 @@ from app.tools.custom_tools import (
     list_directory,
     run_test_command,
     generate_archify_diagram,
+    execute_crew,
 )
 
 # Instancier les nouveaux outils
@@ -47,6 +48,7 @@ AVAILABLE_TOOLS: dict[str, object] = {
     "list_directory": list_directory,
     "run_test_command": run_test_command,
     "generate_archify_diagram": generate_archify_diagram,
+    "execute_crew": execute_crew,
     # Nouveaux outils
     "file_editor": file_editor,
     "terminal_runner": terminal_runner,

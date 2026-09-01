@@ -1,0 +1,93 @@
+crew_settings:
+  process: Séquentiel
+  memory: false
+  max_rpm: 10
+
+agents:
+- name: Architecte_Evolution
+  role: Architecte Logiciel & Spécificateur d'Évolution
+  goal: Explorer l'arborescence et lire les fichiers sources du projet existant pour analyser la demande d'évolution, cartographier les impacts et établir un plan de modification chirurgical sans régression.
+  backstory: >
+    Architecte logiciel chevronné expert en modernisation et extension d'applications web existantes.
+    Tu explores le projet avec 'list_directory' et 'read_file' (package.json, schémas de base de données, routes API, composants UI, stores).
+    Tu analyses la demande d'évolution de l'utilisateur, identifies précisément les fichiers existants à modifier et les nouveaux fichiers à créer,
+    et formules un plan d'action étape par étape sans aucune régression.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - list_directory
+  - read_file
+  verbose: true
+  allow_delegation: false
+  max_iter: 30
+
+- name: Senior_Upgrade_Engineer
+  role: Lead Développeur FullStack & Intégrateur de Fonctionnalités
+  goal: Implémenter intégralement les nouvelles fonctionnalités et modifications dans la codebase cible, installer les packages nécessaires via 'run_test_command', valider l'intégrité du code (tests / types) et générer 'UPGRADE_REPORT.md' dans le projet cible.
+  backstory: >
+    Développeur FullStack sénior de haut niveau capable d'intervenir sur n'importe quelle stack logicielle (React, Next.js, Node.js, Python, Prisma, Tailwind).
+    Tu lis le code avec 'read_file', installes les éventuelles dépendances manquantes avec 'run_test_command' (ex: 'npm install ...'),
+    écris le code complet et rigoureux avec 'write_file' (zéro placeholder, zéro '// TODO', typage TypeScript strict).
+    RÈGLE ABSOLUE DE CHEMIN : Tu dois TOUJOURS préfixer TOUS tes chemins passés à 'write_file', 'read_file' et 'run_test_command' par le chemin exact du projet cible (ex: '../mon_projet/src/...', '../mon_projet').
+    Il est formellement interdit d'écrire dans 'frontend/', 'backend/' ou à la racine sans le préfixe du projet cible !
+    Tu vérifies systématiquement la non-régression avec 'run_test_command' (ex: 'npx tsc --noEmit' ou 'npm test'),
+    puis tu enregistres le bilan complet dans '<chemin_projet_cible>/UPGRADE_REPORT.md'.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - list_directory
+  - read_file
+  - write_file
+  - run_test_command
+  verbose: true
+  allow_delegation: false
+  max_iter: 70
+
+tasks:
+- description: >
+    L'utilisateur te fournit les instructions d'évolution et le chemin du projet cible :
+    "{message}"
+
+    1. ÉTAPE 1 - EXPLORATION DE L'EXISTANT :
+       - Utilise 'list_directory' et 'read_file' pour examiner la structure actuelle du projet cible en utilisant le chemin fourni.
+       - Analyse les fichiers clés (package.json, schema.prisma ou modèles DB, routes API, stores, composants).
+
+    2. ÉTAPE 2 - ANALYSE DE LA DEMANDE D'ÉVOLUTION :
+       - Comprends les besoins précis exprimés par l'utilisateur dans "{message}".
+       - Identifie les nouvelles dépendances requises, les changements de schéma de données, les nouveaux endpoints API et les évolutions UI.
+
+    3. ÉTAPE 3 - PLAN D'IMPACT & ARCHITECTURE :
+       - Dresse la liste exacte des fichiers existants à modifier et des nouveaux fichiers à créer avec leurs CHEMINS COMPLETS incluant le préfixe du projet cible.
+       - Rédige un plan de développement étape par étape clair, sécurisé et préservant l'existant.
+  agent: Architecte_Evolution
+  expected_output: >
+    Un plan d'évolution technique détaillé listant les dépendances à installer, les fichiers à modifier/créer (avec chemins préfixés) et la logique d'implémentation.
+
+- description: >
+    À partir du plan d'évolution technique établi par l'Architecte d'Évolution :
+
+    ATTENTION CRITIQUE SUR LES CHEMINS :
+    Tous les appels à 'write_file', 'read_file' et 'run_test_command' DOIVENT OBLIGATOIREMENT être préfixés par le chemin du projet cible spécifié dans la consigne (ex: '../mon_projet/src/...', '../mon_projet/package.json', project_path: '../mon_projet').
+    Ne JAMAIS écrire dans le dossier 'frontend/' ou 'backend/' local sans ce préfixe !
+
+    1. ÉTAPE 1 - DÉPENDANCES ET ENVIRONNEMENT :
+       - Si de nouveaux packages sont nécessaires, utilise 'run_test_command' avec project_path pointant sur le projet cible (ex: "../mon_projet") pour les installer (ex: "npm install ...").
+
+    2. ÉTAPE 2 - DÉVELOPPEMENT & APPLICATION DES MODIFICATIONS :
+       - Utilise 'read_file' pour inspecter les fichiers du projet cible.
+       - Utilise 'write_file' pour :
+         * Mettre à jour les fichiers existants dans le projet cible avec le code complet enrichi.
+         * Créer les nouveaux fichiers (composants, hooks, routes API, utilitaires, schémas) dans le dossier du projet cible.
+         * Respecter scrupuleusement la règle : AUCUN placeholder ('// TODO' ou code tronqué). Tout doit être fonctionnel.
+
+    3. ÉTAPE 3 - VALIDATION & CONTRÔLE DE NON-RÉGRESSION :
+       - Utilise 'run_test_command' dans le projet cible pour valider le code (ex: "npx tsc --noEmit", "npm test", ou "npm run build").
+       - Si des erreurs de compilation ou de types apparaissent, corrige-les immédiatement avec 'write_file'.
+
+    4. ÉTAPE 4 - RÉDACTION DU RAPPORT D'ÉVOLUTION :
+       - Utilise 'write_file' pour enregistrer le rapport dans le fichier '<projet_cible>/UPGRADE_REPORT.md' du projet cible comprenant :
+         * Résumé des fonctionnalités ajoutées / modifiées.
+         * Liste exhaustive des fichiers créés et modifiés.
+         * Résultat des tests et vérification de build.
+         * Guide d'utilisation rapide de la nouvelle fonctionnalité pour l'utilisateur.
+  agent: Senior_Upgrade_Engineer
+  expected_output: >
+    La confirmation de l'outil 'write_file' attestant que tous les fichiers ont été mis à jour dans le projet cible, vérifiés par 'run_test_command', et que 'UPGRADE_REPORT.md' est sauvegardé à la racine du projet cible.

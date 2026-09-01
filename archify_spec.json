@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "AgentTest Architecture",
+    "subtitle": "CrewAI Orchestration Platform with FastAPI & Next.js",
+    "output": "./architecture_diagram.html"
+  },
+  "components": [
+    {
+      "id": "frontend",
+      "type": "frontend",
+      "label": "Frontend Client",
+      "sublabel": "Next.js 16 / React 19",
+      "pos": [80, 380],
+      "size": [140, 80],
+      "tag": "UI Layer"
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "API Server",
+      "sublabel": "FastAPI / Python",
+      "pos": [310, 380],
+      "size": [140, 80],
+      "tag": "REST + SSE"
+    },
+    {
+      "id": "crew_runner",
+      "type": "backend",
+      "label": "Crew Runner",
+      "sublabel": "Core Logic",
+      "pos": [540, 380],
+      "size": [140, 80],
+      "tag": "Orchestrator"
+    },
+    {
+      "id": "crewai",
+      "type": "backend",
+      "label": "CrewAI",
+      "sublabel": "Agent Framework",
+      "pos": [770, 380],
+      "size": [140, 80],
+      "tag": "Agent Loop"
+    },
+    {
+      "id": "litellm",
+      "type": "backend",
+      "label": "LiteLLM",
+      "sublabel": "LLM Abstraction",
+      "pos": [1000, 380],
+      "size": [140, 80],
+      "tag": "Multi-Provider"
+    },
+    {
+      "id": "llms",
+      "type": "cloud",
+      "label": "External LLMs",
+      "sublabel": "OpenAI / Gemini / Ollama",
+      "pos": [1230, 380],
+      "size": [140, 80],
+      "tag": "External API"
+    },
+    {
+      "id": "docker",
+      "type": "cloud",
+      "label": "Docker Sandbox",
+      "sublabel": "Isolated Execution",
+      "pos": [770, 180],
+      "size": [140, 80],
+      "tag": "Security"
+    },
+    {
+      "id": "yaml",
+      "type": "security",
+      "label": "YAML Config",
+      "sublabel": "Crew Definitions",
+      "pos": [540, 180],
+      "size": [140, 80],
+      "tag": "Persistence"
+    },
+    {
+      "id": "storage",
+      "type": "frontend",
+      "label": "Local Storage",
+      "sublabel": "Browser State",
+      "pos": [80, 180],
+      "size": [140, 80],
+      "tag": "Client DB"
+    }
+  ],
+  "connections": [
+    {
+      "from": "frontend",
+      "to": "api",
+      "label": "HTTP / SSE",
+      "variant": "emphasis",
+      "labelDy": 20
+    },
+    {
+      "from": "api",
+      "to": "crew_runner",
+      "label": "Run Crew",
+      "variant": "emphasis",
+      "labelDy": 20
+    },
+    {
+      "from": "crew_runner",
+      "to": "crewai",
+      "label": "Kickoff",
+      "variant": "emphasis",
+      "labelDy": 20
+    },
+    {
+      "from": "crewai",
+      "to": "litellm",
+      "label": "LLM Request",
+      "variant": "emphasis",
+      "labelDy": 20
+    },
+    {
+      "from": "litellm",
+      "to": "llms",
+      "label": "API Call",
+      "variant": "emphasis",
+      "labelDy": 20
+    },
+    {
+      "from": "crew_runner",
+      "to": "docker",
+      "label": "Exec Code",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "from": "crew_runner",
+      "to": "yaml",
+      "label": "Load Config",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "from": "frontend",
+      "to": "storage",
+      "label": "Persist State",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Backend Server",
+      "wraps": ["api", "crew_runner", "crewai", "litellm", "yaml"]
+    },
+    {
+      "kind": "region",
+      "label": "Client Browser",
+      "wraps": ["frontend", "storage"]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Execution Flow",
+      "items": [
+        "User sends message via Frontend",
+        "FastAPI routes to Crew Runner",
+        "CrewAI orchestrates agents",
+        "LiteLLM handles LLM calls"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Security & Isolation",
+      "items": [
+        "Docker sandbox for code execution",
+        "YAML config validation",
+        "CORS protection on API"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Data Persistence",
+      "items": [
+        "Crew definitions in YAML files",
+        "Conversations in LocalStorage",
+        "No server-side database"
+      ]
+    }
+  ]
+}

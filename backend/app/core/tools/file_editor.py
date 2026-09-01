@@ -2,8 +2,6 @@
 Outil CrewAI pour la lecture, l'écriture et la recherche dans les fichiers.
 """
 
-from __future__ import annotations
-
 import os
 import re
 from pathlib import Path

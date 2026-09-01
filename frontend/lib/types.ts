@@ -53,3 +53,51 @@ export interface SSEChunk {
   code?: number;
   available_models?: string[];
 }
+
+export interface StreamChatOptions {
+  message?: string;
+  inputs?: Record<string, any>;
+  max_rpm?: number;
+  llm_override?: string | null;
+}
+
+export interface CrewLaunchField {
+  key: string;
+  label: string;
+  placeholder?: string;
+  defaultValue?: string;
+  type: "text" | "textarea" | "path" | "select";
+  options?: string[];
+  description?: string;
+  required?: boolean;
+}
+
+export interface ProjectInfo {
+  name: string;
+  path: string;
+  absolute_path: string;
+  is_current: boolean;
+  framework: string;
+  tags: string[];
+  has_git: boolean;
+  has_tests: boolean;
+  has_package_json: boolean;
+  last_modified: number;
+}
+
+export interface DirectoryItem {
+  name: string;
+  path: string;
+  is_dir: boolean;
+  size?: number | null;
+  has_subdirs: boolean;
+}
+
+export interface BrowseResponse {
+  current_path: string;
+  absolute_path: string;
+  parent_path: string | null;
+  breadcrumbs: { name: string; path: string }[];
+  directories: DirectoryItem[];
+  files_count: number;
+}

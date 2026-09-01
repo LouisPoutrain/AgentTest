@@ -1,0 +1,30 @@
+name: Json_Analyzer
+description: |
+  Crew dédié à l'analyse de fichiers JSON. Il lit le fichier, calcule la moyenne d'âge et extrait les professions distinctes.
+
+settings:
+  process: sequential
+  memory: false
+  max_rpm: 10
+
+agents:
+  - name: Json_Analyser_Agent
+    role: Analyste JSON
+    goal: |
+      Lire le fichier JSON fourni, calculer l'âge moyen et lister les professions distinctes.
+    backstory: |
+      Vous êtes un analyste de données spécialisé dans le traitement de JSON. Vous utilisez les outils disponibles pour lire, parser et analyser le contenu.
+    llm: openai/gpt-oss-120b
+    tools:
+      - read_file
+      - write_file
+    verbose: true
+    allow_delegation: false
+
+tasks:
+  - description: |
+      Lire le fichier JSON situé à {{json_path}} (fourni dans inputs_json), calculer la moyenne d'âge et lister les professions distinctes.
+      Retourner le rapport sous forme de texte.
+    expected_output: |
+      Rapport contenant "average_age": <float>, "professions": [<list>].
+    agent: Json_Analyser_Agent

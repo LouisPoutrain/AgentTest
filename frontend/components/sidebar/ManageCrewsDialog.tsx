@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Settings, PlusCircle, Trash2 } from "lucide-react";
+import { Settings, PlusCircle, Trash2, Zap } from "lucide-react";
 import { createCrew, deleteCrew, getCrew } from "@/lib/api";
 import type { CrewDetail } from "@/lib/types";
 
@@ -73,7 +73,7 @@ export function ManageCrewsDialog({ availableCrews, onRefreshCrews }: ManageCrew
               {availableCrews.map(name => (
                 <div key={name} className="group flex items-center justify-between bg-bg-tertiary p-3 rounded-lg border border-border">
                   <div className="flex items-center gap-2 text-sm">
-                    <span className="text-accent">⚡</span>
+                    <Zap className="h-3.5 w-3.5 text-accent fill-current" />
                     <span className="font-medium">{name}</span>
                   </div>
                   <button
@@ -104,7 +104,7 @@ export function ManageCrewsDialog({ availableCrews, onRefreshCrews }: ManageCrew
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Processus</Label>
-                <Select value={crewProcess} onValueChange={setCrewProcess}>
+                <Select value={crewProcess} onValueChange={(val) => val && setCrewProcess(val)}>
                   <SelectTrigger className="h-8 text-sm bg-bg-tertiary border-border"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Séquentiel">Séquentiel</SelectItem>

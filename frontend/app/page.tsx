@@ -12,16 +12,16 @@ import {
   updateLastAssistantMessage,
   updateConversationCrew
 } from "@/lib/store";
-import { listCrews, streamChat, getCrew } from "@/lib/api";
+import { listCrews, streamChat, getCrew, listModels } from "@/lib/api";
 import type { Conversation, SSEChunk, CrewDetail } from "@/lib/types";
 
 export default function Home() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | undefined>();
   const [availableCrews, setAvailableCrews] = useState<string[]>([]);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [activeCrewDetail, setActiveCrewDetail] = useState<CrewDetail | null>(null);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [streamingState, setStreamingState] = useState<Record<string, { isStreaming: boolean; controller: AbortController }>>({});
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load initial data
@@ -34,6 +34,7 @@ export default function Home() {
     setIsLoaded(true);
     
     listCrews().then(setAvailableCrews).catch(console.error);
+    listModels().then(setAvailableModels).catch(console.error);
   }, []);
 
   // Save on change
@@ -46,20 +47,29 @@ export default function Home() {
   const activeConversation = conversations.find(c => c.id === activeId);
 
   useEffect(() => {
-    if (activeConversation) {
+    if (activeConversation?.crewName) {
       getCrew(activeConversation.crewName).then(setActiveCrewDetail).catch(console.error);
+    } else {
+      setActiveCrewDetail(null);
     }
   }, [activeConversation?.crewName]);
 
   const handleNewConversation = () => {
-    // For simplicity, just pick the first available crew if any
-    const defaultCrew = availableCrews[0] || "default_crew.yaml";
+    const defaultCrew = availableCrews[0] || "Reviewer.yaml";
     const newConv = createConversation(defaultCrew);
     setConversations([newConv, ...conversations]);
     setActiveId(newConv.id);
   };
 
-  const handleSendMessage = async (message: string) => {
+  const handleLaunchCrew = async ({
+    message,
+    inputs,
+    options,
+  }: {
+    message: string;
+    inputs: Record<string, any>;
+    options?: { llm_override?: string; max_rpm?: number };
+  }) => {
     if (!activeConversation) return;
 
     // 1. Add user message
@@ -69,15 +79,24 @@ export default function Home() {
     updatedConv = addMessageToConversation(updatedConv, "assistant", "");
     
     setConversations(prev => prev.map(c => c.id === updatedConv.id ? updatedConv : c));
-    setIsStreaming(true);
-
+    
+    const convId = updatedConv.id;
     const controller = new AbortController();
-    setAbortController(controller);
+    
+    setStreamingState(prev => ({
+      ...prev,
+      [convId]: { isStreaming: true, controller }
+    }));
 
     try {
       await streamChat(
         activeConversation.crewName,
-        { message, max_rpm: 15 },
+        {
+          message,
+          inputs,
+          max_rpm: options?.max_rpm || 15,
+          llm_override: options?.llm_override || null,
+        },
         (chunk: SSEChunk) => {
           setConversations(prev => {
             const current = prev.find(c => c.id === updatedConv.id);
@@ -107,16 +126,31 @@ export default function Home() {
         });
       }
     } finally {
-      setIsStreaming(false);
-      setAbortController(null);
+      setStreamingState(prev => {
+        const next = { ...prev };
+        delete next[convId];
+        return next;
+      });
     }
   };
 
+  const handleSendMessage = (message: string) => {
+    handleLaunchCrew({
+      message,
+      inputs: { message },
+    });
+  };
+
   const handleStop = () => {
-    if (abortController) {
-      abortController.abort();
-      setIsStreaming(false);
-      setAbortController(null);
+    if (!activeId) return;
+    const state = streamingState[activeId];
+    if (state?.controller) {
+      state.controller.abort();
+      setStreamingState(prev => {
+        const next = { ...prev };
+        delete next[activeId];
+        return next;
+      });
     }
   };
 
@@ -142,22 +176,24 @@ export default function Home() {
       />
       <main className="flex-1 min-w-0 h-full flex flex-col relative">
         {activeConversation ? (
-          <>
-            <ChatWindow 
-              messages={activeConversation.messages}
-              isStreaming={isStreaming}
-              crewName={activeConversation.crewName}
-              availableCrews={availableCrews}
-              onCrewChange={(newName) => {
-                setConversations(prev => 
-                  prev.map(c => c.id === activeConversation.id ? updateConversationCrew(c, newName) : c)
-                );
-              }}
-              headerAction={activeCrewDetail ? <CrewConfig crewDetail={activeCrewDetail} onUpdate={setActiveCrewDetail} /> : undefined}
-              onSendMessage={handleSendMessage}
-              onStop={handleStop}
-            />
-          </>
+          <ChatWindow 
+            messages={activeConversation.messages}
+            isStreaming={!!streamingState[activeConversation.id]?.isStreaming}
+            crewName={activeConversation.crewName}
+            crewDetail={activeCrewDetail}
+            availableCrews={availableCrews}
+            availableModels={availableModels}
+            onCrewChange={(newName) => {
+              setConversations(prev => 
+                prev.map(c => c.id === activeConversation.id ? updateConversationCrew(c, newName) : c)
+              );
+            }}
+            headerAction={activeCrewDetail ? <CrewConfig crewDetail={activeCrewDetail} onUpdate={setActiveCrewDetail} /> : undefined}
+            onSendMessage={handleSendMessage}
+            onLaunchCrew={handleLaunchCrew}
+            onStop={handleStop}
+            onResetLaunchPad={handleNewConversation}
+          />
         ) : (
           <div className="flex items-center justify-center h-full text-text-secondary">
             Sélectionnez ou créez une conversation

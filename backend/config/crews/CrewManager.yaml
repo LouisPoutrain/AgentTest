@@ -1,0 +1,77 @@
+crew_settings:
+  process: Séquentiel
+  memory: false
+  max_rpm: 10
+
+agents:
+- name: Architecte_Logiciel_Manager
+  role: Manager de projet et créateur de Crews de développement
+  goal: Analyser un document de plan Markdown et générer physiquement un fichier YAML CrewAI de Build/Développement propre et complet sur le disque via 'write_file'.
+  backstory: >
+    Tu es un Directeur Technique rigoureux. Tu analyses un document Markdown (ex: ARCHITECTURE_PROPOSAL.md)
+    et conçois un Crew de développement focalisé à 100% sur la production de code propre, modulaire et complet
+    pour le Backend et le Frontend. Tu découpes le développement en 2 phases séquentielles claires (Phase 1: Config, DB & Backend API ;
+    Phase 2: Frontend UI & Stores) pour éviter toute surcharge de contexte ou code tronqué.
+    Tu EXÉCUTES TOUJOURS l'outil 'write_file' pour sauvegarder le fichier YAML dans 'backend/config/crews/'.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - list_directory
+  - read_file
+  - write_file
+  verbose: true
+  allow_delegation: false
+
+tasks:
+- description: >
+    L'utilisateur te fournit le chemin du document Markdown source : "{message}".
+
+    1. ÉTAPE 1 - LECTURE & ANALYSE DE LA NATURE DU PROJET :
+       - Utilise 'read_file' pour lire intégralement le document situé à "{message}".
+       - Identifie le nom du projet, la stack technologique et l'arborescence des fichiers à créer.
+
+    2. ÉTAPE 2 - GESTION DE L'ESPACE DE TRAVAIL & DOSSIER CIBLE :
+       - Le Crew généré DOIT impérativement créer et écrire tous les fichiers dans le dossier parent : '../<nom_du_projet>/' (ex: '../InvoiceGen/package.json', '../InvoiceGen/app/page.tsx', etc.).
+       - Chaque tâche du Crew généré doit expressément contenir l'instruction impérative : "Tu DOIS utiliser 'write_file' avec le chemin relatif '../<nom_du_projet>/<fichier>' pour créer physiquement le code sur le disque."
+       - Interdis formellement les placeholders ('// TODO' ou code incomplet).
+
+    3. ÉTAPE 3 - CONCEPTION DU YAML DE BUILD SELON CE SCHÉMA STRICT :
+       Conçois le Crew de Build découpé en 2 phases de développement (sans étape de test, qui sera confiée à un crew dédié 'Tester') :
+
+       crew_settings:
+         process: Séquentiel
+         memory: false
+         max_rpm: 10
+
+       agents:
+       - name: FullStack_Developer
+         role: Ingénieur Développeur FullStack
+         goal: Implémenter l'intégralité du code source applicatif (backend, frontend, styles, configs) via write_file dans ../<nom_du_projet>/.
+         backstory: Développeur expérimenté et méthodique, tu écris du code propre, typé et prêt pour la production sans aucun placeholder.
+         llm: openai/qwen-3.6-35b-instruct
+         tools:
+         - read_file
+         - write_file
+
+       tasks:
+       - description: >
+           PHASE 1 : FONDATIONS, CONFIGURATION, BASE DE DONNÉES & BACKEND API
+           Développe tous les fichiers de configuration, schémas de base de données, bibliothèques serveur et routes API dans '../<nom_du_projet>/'.
+           Tu DOIS utiliser 'write_file' pour chaque fichier.
+         agent: FullStack_Developer
+         expected_output: >
+           Confirmation de l'outil 'write_file' pour chaque fichier backend et configuration généré.
+       - description: >
+           PHASE 2 : FRONTEND, GESTION D'ÉTAT & INTERFACE UTILISATEUR
+           Développe tous les composants UI, layouts, styles, stores et pages interactives dans '../<nom_du_projet>/'.
+           Tu DOIS utiliser 'write_file' pour chaque fichier.
+         agent: FullStack_Developer
+         expected_output: >
+           Confirmation de l'outil 'write_file' pour chaque composant et fichier frontend généré.
+
+    4. ÉTAPE 4 - ENREGISTREMENT PHYSIQUE OBLIGATOIRE SUR LE DISQUE :
+       - Tu DOIS EXÉCUTER l'outil 'write_file' avec :
+         * file_path: 'backend/config/crews/Build_<NomDuProjet>.yaml'
+         * content: Le texte YAML complet préparé à l'étape 3.
+  expected_output: >
+    Le message de confirmation retourné par l'outil 'write_file' confirmant que le fichier 'backend/config/crews/Build_<NomDuProjet>.yaml' a été écrit avec succès sur le disque.
+  agent: Architecte_Logiciel_Manager

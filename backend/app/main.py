@@ -7,6 +7,41 @@ Lance avec : uvicorn app.main:app --reload --port 8000
 from __future__ import annotations
 
 import os
+import sys
+
+# ── Protection contre les déconnexions de TTY [Errno 5] ───────────────────────
+class SafeStreamWriter:
+    """Empêche les crashs [Errno 5] Input/output error lorsque stdout/stderr perdent leur TTY."""
+    def __init__(self, target):
+        self.target = target
+
+    def write(self, s):
+        try:
+            if self.target:
+                return self.target.write(s)
+        except (OSError, IOError, BrokenPipeError):
+            pass
+
+    def flush(self):
+        try:
+            if self.target:
+                self.target.flush()
+        except (OSError, IOError, BrokenPipeError):
+            pass
+
+    def isatty(self):
+        try:
+            return self.target.isatty()
+        except Exception:
+            return False
+
+    def __getattr__(self, name):
+        return getattr(self.target, name)
+
+if not isinstance(sys.stdout, SafeStreamWriter):
+    sys.stdout = SafeStreamWriter(sys.stdout)
+if not isinstance(sys.stderr, SafeStreamWriter):
+    sys.stderr = SafeStreamWriter(sys.stderr)
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -15,6 +50,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.chat import router as chat_router
 from app.api.crews import router as crews_router
 from app.api.models import router as models_router
+from app.api.workspace import router as workspace_router
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -40,11 +76,26 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization", "Accept"],
 )
 
+# ── Gestion des Erreurs ───────────────────────────────────────────────────────
+
+from fastapi import Request
+from fastapi.responses import JSONResponse
+import logging
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logging.error(f"Global Error: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Une erreur interne est survenue sur le serveur.", "error": str(exc)},
+    )
+
 # ── Routes ───────────────────────────────────────────────────────────────────
 
 app.include_router(chat_router)
 app.include_router(crews_router)
 app.include_router(models_router)
+app.include_router(workspace_router)
 
 
 @app.get("/api/health")

@@ -228,7 +228,7 @@ export async function listTools(): Promise<string[]> {
 
 export async function streamChat(
   crewName: string,
-  options: { message: string; max_rpm?: number; llm_override?: string | null },
+  options: { message?: string; inputs?: Record<string, any>; max_rpm?: number; llm_override?: string | null },
   onChunk: (chunk: SSEChunk) => void,
   signal?: AbortSignal
 ): Promise<void> {
@@ -237,7 +237,8 @@ export async function streamChat(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       crew_name: crewName,
-      message: options.message,
+      message: options.message || "",
+      inputs: options.inputs || null,
       max_rpm: options.max_rpm || 15,
       llm_override: options.llm_override || null,
     }),
@@ -276,3 +277,21 @@ export async function streamChat(
     }
   }
 }
+
+/* ── Workspace & Projects Discovery ── */
+
+export async function getWorkspaceProjects(): Promise<import("./types").ProjectInfo[]> {
+  const res = await fetch(`${API_BASE}/api/workspace/projects`);
+  if (!res.ok) throw new Error("Failed to fetch workspace projects");
+  return res.json();
+}
+
+export async function browseWorkspaceDirectory(path: string = "."): Promise<import("./types").BrowseResponse> {
+  const res = await fetch(`${API_BASE}/api/workspace/browse?path=${encodeURIComponent(path)}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to browse directory");
+  }
+  return res.json();
+}
+

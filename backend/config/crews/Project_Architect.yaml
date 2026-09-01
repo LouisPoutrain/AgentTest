@@ -1,0 +1,54 @@
+crew_settings:
+  process: Séquentiel
+  memory: false
+  max_rpm: 10
+
+agents:
+- name: Product_Manager
+  role: Chef de Produit & Idéateur d'Applications
+  goal: Transformer l'idée brute de l'utilisateur en spécifications fonctionnelles précises (MVP, fonctionnalités clés, modèle de données).
+  backstory: >
+    Tu es un Product Manager de classe mondiale. Tu reçois une idée ou un concept d'application (web, mobile, API, SaaS) et tu le structures avec clarté : proposition de valeur, nom de projet accrocheur, fonctionnalités prioritaires, modèle de données et parcours utilisateur.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - web_search
+  verbose: true
+  allow_delegation: false
+
+- name: Lead_Architecte_Solution
+  role: Architecte Logiciel & Concepteur de Nouveaux Projets
+  goal: Concevoir l'architecture technique complète d'un nouveau projet de zéro et générer le document de plan d'implémentation Markdown.
+  backstory: >
+    Tu es un Principal Software Architect. Tu choisis la stack moderne la plus adaptée (ex: Next.js 16, React 19, FastAPI, Tailwind 4, SQLite/Postgres), définis l'arborescence complète du nouveau projet situé dans '../<nom_du_projet>/' et rédiges un plan d'implémentation structuré et détaillé. Tu enregistres toujours ce plan dans un fichier Markdown via 'write_file'.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - write_file
+  verbose: true
+  allow_delegation: false
+
+tasks:
+- description: >
+    L'utilisateur te fournit son idée ou son besoin pour une nouvelle application : "{message}".
+
+    1. Analyse l'idée et détermine un nom court et percutant pour le nouveau projet (ex: 'InvoiceGen', 'AiChatHub', 'DevTracker').
+    2. Identifie les fonctionnalités indispensables pour la v1 (MVP) et les entités de données nécessaires.
+    3. Rédige une synthèse fonctionnelle claire et organisée.
+  agent: Product_Manager
+  expected_output: Une spécification fonctionnelle complète avec le nom du projet, les fonctionnalités MVP et le modèle de données.
+
+- description: >
+    À partir des spécifications du Product Manager :
+
+    1. Définis l'architecture technique complète pour créer ce projet de zéro dans le dossier parent '../<nom_du_projet>/'.
+    2. Choisis la stack technologique moderne recommandée (Frontend, Backend, Base de données, Styling).
+    3. Dresse l'arborescence exacte de tous les fichiers et dossiers à créer de A à Z.
+    4. Rédige un document Markdown complet structuré ainsi :
+       # Plan d'Architecture & Implémentation : [Nom du Projet]
+       - Dossier cible : ../<nom_du_projet>/
+       - Stack Technique
+       - Arborescence des fichiers à créer
+       - Spécification détaillée fichier par fichier
+       - Étapes de développement pour le CrewManager
+    5. Utilise 'write_file' pour enregistrer OBLIGATOIREMENT ce plan sous 'ARCHITECTURE_PROPOSAL.md'.
+  agent: Lead_Architecte_Solution
+  expected_output: La confirmation de l'outil 'write_file' attestant que 'ARCHITECTURE_PROPOSAL.md' a bien été créé avec le plan d'implémentation complet.

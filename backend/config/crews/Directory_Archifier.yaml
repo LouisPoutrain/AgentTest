@@ -1,0 +1,60 @@
+name: Directory_Archifier
+description: >
+    Parcourt un dossier cible, analyse son contenu et génère un diagramme d'architecture interactif complet via Archify.
+
+settings:
+    process: sequential
+    memory: false
+    max_rpm: 15
+
+agents:
+    - name: "Code_Explorer"
+      role: "Explorer et analyser la structure de code d'un répertoire"
+      goal: "Naviguer dans le dossier spécifié, lire les fichiers structurants, et rédiger un descriptif technique complet (composants, interactions, base de données) de ce qui s'y trouve."
+      backstory: >
+          Tu es un architecte logiciel spécialisé dans la rétro-ingénierie. Tu utilises list_directory et read_file pour comprendre le but et le fonctionnement global d'un dossier de code. Ton rapport servira de base pour générer un schéma visuel.
+      llm: "openai/qwen-3.6-35b-instruct"
+      tools:
+          - list_directory
+          - read_file
+      verbose: true
+      allow_delegation: false
+
+    - name: "Archify_Expert"
+      role: "Créer des diagrammes d'architecture validés (JSON IR) interactifs"
+      goal: "Traduire l'analyse de Code_Explorer en une spécification JSON conforme à Archify, et générer le livrable HTML."
+      backstory: >
+          Tu es un expert Archify. Ton but est de créer un schéma JSON clair et de l'utiliser pour générer un fichier .html avec generate_archify_diagram. Tu garantis un diagramme clair, sans flèches superflues, et représentant fidèlement l'analyse technique.
+      llm: "openai/qwen-3.6-35b-instruct"
+      tools:
+          - generate_archify_diagram
+          - write_file
+          - read_file
+          - list_directory
+      verbose: true
+      allow_delegation: false
+
+tasks:
+    - name: 'Analyse du dossier'
+      agent: 'Code_Explorer'
+      description: >
+          Le dossier cible à analyser est : {directory_path}
+          Utilise list_directory pour voir son contenu et read_file sur les fichiers majeurs (package.json, README.md, docker-compose.yml, ou les fichiers sources principaux). 
+          Rédige un rapport complet identifiant les composants, les rôles (frontend, backend, cache, DB) et les interactions réseau ou dépendances logiques.
+      expected_output: >
+          Un rapport textuel détaillé décrivant l'architecture logique, les dépendances et le rôle de chaque composant présent dans le dossier.
+
+    - name: 'Génération du diagramme Archify'
+      agent: 'Archify_Expert'
+      description: >
+          À partir de l'analyse précédente, tu dois générer un diagramme d'architecture en HTML en utilisant l'outil `generate_archify_diagram`.
+          Pour que le schéma JSON soit de très haute qualité et ne contienne aucune erreur de format :
+          1. Utilise `list_directory` et `read_file` pour explorer le dépôt officiel de Archify qui est cloné dans le dossier `backend/app/tools/.cache/archify`.
+          2. Lis le fichier `backend/app/tools/.cache/archify/README.md` ou explore le sous-dossier `backend/app/tools/.cache/archify/examples` (ex: `archify-repo.architecture.json`) pour bien comprendre les champs attendus (comme `schema_version`, `diagram_type`, `meta`, `components`, `connections`, etc).
+          3. Une fois que tu as compris le schéma attendu, conçois le JSON représentant l'architecture.
+          4. Utilise `generate_archify_diagram` avec :
+             - `json_spec` : le code JSON que tu as conçu
+             - `output_path` : "{directory_path}/architecture_diagram.html"
+             - `diagram_type` : "architecture"
+      expected_output: >
+          Le rapport de succès de la génération du fichier HTML, incluant son chemin exact.

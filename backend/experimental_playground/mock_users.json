@@ -1,0 +1,7 @@
+[
+  {"name": "Alice Dupont", "age": 28, "profession": "Ingénieur logiciel"},
+  {"name": "Bob Martin", "age": 35, "profession": "Designer UI/UX"},
+  {"name": "Clara Nguyen", "age": 42, "profession": "Chef de projet"},
+  {"name": "David Rossi", "age": 31, "profession": "Data Scientist"},
+  {"name": "Emma Silva", "age": 24, "profession": "Développeur front-end"}
+]

@@ -12,6 +12,7 @@ agents:
   llm: openai/qwen-3.6-35b-instruct
   tools:
   - clone_github_repo
+  - list_directory
   - read_file
   verbose: true
   allow_delegation: false
@@ -33,6 +34,7 @@ agents:
     sein d'un dépôt.
   llm: openai/qwen-3.6-35b-instruct
   tools:
+  - list_directory
   - read_file
   verbose: true
   allow_delegation: false
@@ -44,6 +46,7 @@ agents:
     fidèlement le rôle, le backstory et les outils dans un schéma YAML valide.
   llm: openai/qwen-3.6-35b-instruct
   tools:
+  - list_directory
   - read_file
   verbose: true
   allow_delegation: false

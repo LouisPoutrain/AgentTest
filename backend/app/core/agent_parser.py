@@ -34,6 +34,7 @@ def _build_agent(
     config: dict[str, Any],
     available_tools: dict[str, Any],
     source_name: str,
+    step_callback: Any | None = None,
 ) -> Agent:
     """Instancie un ``Agent`` CrewAI à partir d'un dictionnaire de config.
 
@@ -73,6 +74,8 @@ def _build_agent(
         allow_delegation=config.get("allow_delegation", False),
         tools=resolved_tools,
         llm=config.get("llm"),
+        max_iter=config.get("max_iter", 40),
+        step_callback=step_callback,
     )
 
 
@@ -83,6 +86,7 @@ def create_agents_from_yaml(
     yaml_path: str | Path,
     available_tools: dict[str, Any] | None = None,
     llm_override: str | None = None,
+    step_callback: Any | None = None,
 ) -> list[Agent]:
     """Charge **tous** les agents définis dans un fichier YAML.
 
@@ -96,22 +100,26 @@ def create_agents_from_yaml(
         Liste d'agents CrewAI instanciés, dans l'ordre du YAML.
     """
     raw = _load_yaml(yaml_path)
+    path = Path(yaml_path)
     tools = available_tools or {}
-    source = Path(yaml_path).name
+    agents = []
 
-    # Format « crew » : clé agents contenant une liste
-    if "agents" in raw and isinstance(raw["agents"], list):
-        agents_to_build = []
-        for agent_cfg in raw["agents"]:
+    if "agents" in raw:
+        agents_list = raw.get("agents", [])
+        if not agents_list:
+            raise KeyError(f"Aucun agent trouvé dans la clé 'agents' de {yaml_path}")
+
+        for agent_config in agents_list:
             if llm_override:
-                agent_cfg["llm"] = llm_override
-            agents_to_build.append(_build_agent(agent_cfg, tools, source))
-        return agents_to_build
+                agent_config["llm"] = llm_override
+            agents.append(_build_agent(agent_config, tools, str(path), step_callback=step_callback))
 
-    # Format legacy : agent unique à la racine
-    if llm_override:
-        raw["llm"] = llm_override
-    return [_build_agent(raw, tools, source)]
+    elif "role" in raw:
+        if llm_override:
+            raw["llm"] = llm_override
+        agents.append(_build_agent(raw, tools, str(path), step_callback=step_callback))
+    
+    return agents
 
 
 def create_tasks_from_yaml(

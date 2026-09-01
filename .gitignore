@@ -10,3 +10,6 @@ frontend/.env.local
 *.log
 *.pid
 backend/logs/
+.aider*
+.DS_Store
+analyse_temp/

@@ -1,0 +1,80 @@
+crew_settings:
+  process: Séquentiel
+  memory: false
+  max_rpm: 10
+
+agents:
+- name: Cartographe_QA
+  role: Architecte QA & Explorateur de Codebase
+  goal: Explorer l'arborescence du projet cible pour cartographier les composants, routes API, modèles et fonctions nécessitant des tests.
+  backstory: >
+    Expert en stratégie de test logiciel, tu navigues rapidement dans les dossiers du projet avec 'list_directory'
+    pour identifier la stack utilisée (Next.js, FastAPI, Prisma, etc.), les points critiques et définir
+    le plan de test le plus exhaustif.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - list_directory
+  verbose: true
+  allow_delegation: false
+  max_iter: 30
+
+- name: Ingenieur_Tests_Automatises
+  role: Lead Ingénieur QA & Exécuteur de Tests
+  goal: Rédiger des suites de tests complètes, les EXÉCUTER réellement sur la machine via 'run_test_command', analyser la sortie console et générer un rapport TEST_REPORT.md factuel.
+  backstory: >
+    Expert en automatisation des tests (Vitest, Jest, Pytest, React Testing Library, Supertest),
+    tu lis le code source avec 'read_file' pour comprendre la logique métier exacte.
+    Tu écris les fichiers de configuration et les tests avec 'write_file'.
+    Puis, tu EXÉCUTES TOUJOURS les commandes de test avec 'run_test_command' pour obtenir le verdict réel de la machine.
+    Tu analyses les tests passés, les échecs et les traces d'erreur, et rédiges le rapport 'TEST_REPORT.md' complet.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - list_directory
+  - read_file
+  - write_file
+  - run_test_command
+  verbose: true
+  allow_delegation: false
+  max_iter: 70
+
+tasks:
+- description: >
+    L'utilisateur te fournit le chemin du projet à tester : "{message}".
+
+    1. Utilise 'list_directory' pour explorer la structure du projet à "{message}".
+    2. Identifie les sous-dossiers clés (ex: src/app/api, components, lib, stores, prisma).
+    3. Dresse la liste exacte des composants, fonctions utilitaires, stores et routes API prioritaires à tester.
+  agent: Cartographe_QA
+  expected_output: >
+    Un plan de couverture de tests listant les fichiers sources critiques et les suites de tests à implémenter.
+
+- description: >
+    À partir de la cartographie de test établie :
+
+    1. ÉTAPE 1 - CRÉATION DES FICHIERS DE TESTS :
+       - Utilise 'read_file' pour lire les fichiers sources critiques dans "{message}".
+       - Utilise 'write_file' pour générer la configuration de test dans "{message}" :
+         * vitest.config.ts (ou configuration adaptée à la stack)
+         * tests/setupTests.ts (mocks globaux de fetch, localStorage, etc.)
+       - Utilise 'write_file' pour générer les fichiers de tests dans "{message}/tests/" :
+         * Tests unitaires des utilitaires et clients API
+         * Tests d'intégration des endpoints d'API (avec mocks Prisma / LLM)
+         * Tests de composants UI et de stores (Zustand / Redux)
+         * Tests des cas limites (edge-cases, inputs invalides, erreurs HTTP)
+
+    2. ÉTAPE 2 - EXÉCUTION RÉELLE DES TESTS SUR LA MACHINE :
+       - Utilise 'run_test_command' avec :
+         * project_path: "{message}"
+         * command: "npx vitest run --reporter=verbose" (ou "npm test" ou "pytest" selon la stack)
+       - Si des erreurs de compilation ou de types surviennent, exécute aussi "npx tsc --noEmit" via 'run_test_command'.
+
+    3. ÉTAPE 3 - ANALYSE DU BILAN RÉEL & RÉDACTION DE TEST_REPORT.md :
+       - Analyse méticuleusement les résultats de 'run_test_command' (tests réussis, tests en échec, logs d'erreurs, stack traces).
+       - Utilise 'write_file' pour enregistrer le rapport dans "{message}/TEST_REPORT.md" comprenant :
+         * Bilan Global d'Exécution : Nombre de tests réussis vs échoués (avec le code de sortie exact).
+         * Détail des tests en échec (nom du test, fichier, cause exacte de l'échec et trace d'erreur).
+         * Diagnostics & Bugs réels détectés dans le code applicatif.
+         * Recommandations précises pour le crew 'Fixer' afin de réparer les problèmes constatés.
+  agent: Ingenieur_Tests_Automatises
+  expected_output: >
+    Le rapport complet '{message}/TEST_REPORT.md' basé sur l'exécution réelle des tests, et la confirmation de l'outil 'write_file'.

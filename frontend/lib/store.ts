@@ -1,6 +1,5 @@
 "use client";
 
-import { v4 as uuidv4 } from "crypto";
 import type { ChatMessage, Conversation } from "./types";
 
 const STORAGE_KEY = "agenttest_conversations";

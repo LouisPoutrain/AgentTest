@@ -48,6 +48,7 @@ def get_crew(crew_name: str) -> dict[str, Any]:
         data = yaml.safe_load(f) or {}
     return {
         "name": crew_name,
+        "description": data.get("description", "Aucune description fournie."),
         "crew_settings": data.get("crew_settings", {}),
         "agents": data.get("agents", []),
         "tasks": data.get("tasks", []),

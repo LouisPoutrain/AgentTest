@@ -2,8 +2,6 @@
 Outil CrewAI pour l'exécution de commandes terminal.
 """
 
-from __future__ import annotations
-
 import subprocess
 from typing import Optional
 
@@ -14,7 +12,7 @@ class TerminalRunnerTool(BaseTool):
     """Outil pour exécuter des commandes shell dans le terminal."""
 
     name: str = "Terminal Runner"
-    description: (
+    description: str = (
         "Un outil pour exécuter des commandes shell. "
         "Utilisez-le pour installer des dépendances, lancer des tests, compiler du code, etc. "
         "Exemple : run(command='npm install') ou run(command='python -m pytest tests/') "

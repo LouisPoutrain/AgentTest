@@ -12,11 +12,46 @@ import json
 import logging
 import os
 import queue
+import sys
 import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Generator
+
+# ── Protection contre les déconnexions de TTY [Errno 5] ───────────────────────
+class SafeStreamWriter:
+    """Empêche les crashs [Errno 5] Input/output error lorsque stdout/stderr perdent leur TTY."""
+    def __init__(self, target):
+        self.target = target
+
+    def write(self, s):
+        try:
+            if self.target:
+                return self.target.write(s)
+        except (OSError, IOError, BrokenPipeError):
+            pass
+
+    def flush(self):
+        try:
+            if self.target:
+                self.target.flush()
+        except (OSError, IOError, BrokenPipeError):
+            pass
+
+    def isatty(self):
+        try:
+            return self.target.isatty()
+        except Exception:
+            return False
+
+    def __getattr__(self, name):
+        return getattr(self.target, name)
+
+if not isinstance(sys.stdout, SafeStreamWriter):
+    sys.stdout = SafeStreamWriter(sys.stdout)
+if not isinstance(sys.stderr, SafeStreamWriter):
+    sys.stderr = SafeStreamWriter(sys.stderr)
 
 # ── Monkeypatch LiteLLM BEFORE crewai imports it ─────────────────────────────
 import litellm
@@ -54,18 +89,33 @@ def _patched_completion(*args, **kwargs):
             if "cache_breakpoint" in msg:
                 del msg["cache_breakpoint"]
                 
-    try:
-        return _orig_completion(*args, **kwargs)
-    except Exception as e:
-        import traceback
-        logging.error(f"❌ LITELLM ERROR IN PATCH: {type(e)} - {e}\n{traceback.format_exc()}")
-        if hasattr(e, "status_code"):
-            logging.error(f"❌ LITELLM ERROR STATUS CODE: {getattr(e, 'status_code')}")
-        if hasattr(e, "message"):
-            logging.error(f"❌ LITELLM ERROR MESSAGE: {getattr(e, 'message')}")
-        if hasattr(e, "response"):
-            logging.error(f"❌ LITELLM RESPONSE DUMP: {getattr(e, 'response')}")
-        raise e
+    import time
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            return _orig_completion(*args, **kwargs)
+        except Exception as e:
+            err_str = str(e)
+            is_transient = (
+                "504" in err_str or "502" in err_str or "503" in err_str
+                or "Gateway Time-out" in err_str or "timeout" in err_str.lower()
+                or "connection error" in err_str.lower() or "RateLimitError" in type(e).__name__
+            )
+            if is_transient and attempt < max_retries - 1:
+                wait_time = 2 * (attempt + 1)
+                logging.warning(f"⚠️ Erreur temporaire LLM ({err_str[:100]}...), nouvelle tentative {attempt + 2}/{max_retries} dans {wait_time}s...")
+                time.sleep(wait_time)
+                continue
+
+            import traceback
+            logging.error(f"❌ LITELLM ERROR IN PATCH: {type(e)} - {e}\n{traceback.format_exc()}")
+            if hasattr(e, "status_code"):
+                logging.error(f"❌ LITELLM ERROR STATUS CODE: {getattr(e, 'status_code')}")
+            if hasattr(e, "message"):
+                logging.error(f"❌ LITELLM ERROR MESSAGE: {getattr(e, 'message')}")
+            if hasattr(e, "response"):
+                logging.error(f"❌ LITELLM RESPONSE DUMP: {getattr(e, 'response')}")
+            raise e
 
 litellm.completion = _patched_completion
 
@@ -125,6 +175,7 @@ def _make_chunk(chunk_type: str, content: str, **extra: Any) -> str:
 def run_crew(
     crew_name: str,
     message: str = "",
+    inputs: dict[str, Any] | None = None,
     max_rpm: int = 15,
     llm_override: str | None = None,
 ) -> Generator[str, None, None]:
@@ -159,21 +210,41 @@ def run_crew(
 
         yield _make_chunk("log", f"Paramètres : process={crew_settings['process']}, memory={crew_settings['memory']}, max_rpm={effective_rpm}")
 
+        # Configurer la capture de logs via queue
+        log_queue: queue.Queue[str] = queue.Queue()
+        queue_handler = QueueLogHandler(log_queue)
+        queue_handler.setFormatter(logging.Formatter("%(message)s"))
+        
+        def agent_step_callback(agent_output):
+            try:
+                # agent_output peut être un AgentAction ou une liste
+                if hasattr(agent_output, 'log'):
+                    # Nettoyage basique pour l'UI
+                    log_text = agent_output.log.strip()
+                    if log_text:
+                        log_queue.put(f"🧠 [Réflexion] {log_text}")
+                elif isinstance(agent_output, list) and len(agent_output) > 0 and hasattr(agent_output[0], 'log'):
+                    log_text = agent_output[0].log.strip()
+                    if log_text:
+                        log_queue.put(f"🧠 [Réflexion] {log_text}")
+                elif isinstance(agent_output, str):
+                    log_queue.put(f"🧠 [Réflexion] {agent_output}")
+            except Exception:
+                pass
+
         # Instancier agents et tâches
         agents = create_agents_from_yaml(
             config_path,
             available_tools=AVAILABLE_TOOLS,
             llm_override=llm_override,
+            step_callback=agent_step_callback,
         )
         yield _make_chunk("log", f"{len(agents)} agent(s) chargé(s).")
 
         tasks = create_tasks_from_yaml(config_path, agents)
         yield _make_chunk("log", f"{len(tasks)} tâche(s) chargée(s).")
 
-        # Configurer la capture de logs via queue
-        log_queue: queue.Queue[str] = queue.Queue()
-        queue_handler = QueueLogHandler(log_queue)
-        queue_handler.setFormatter(logging.Formatter("%(message)s"))
+
         
         # Configurer la capture de logs par crew (Fichier)
         logs_dir = Path("logs")
@@ -221,17 +292,49 @@ def run_crew(
             max_retries = 3
             retries = 0
             
-            # Use various keys in inputs so users can use {message}, {user_request} or {topic} in their prompts
-            inputs = {
-                "message": message,
-                "user_request": message,
-                "topic": message,
-                "user_prompt": message
-            }
+            # Prepare inputs dictionary
+            effective_inputs: dict[str, Any] = {}
+            if inputs and isinstance(inputs, dict):
+                effective_inputs.update(inputs)
+                if "message" not in effective_inputs and message:
+                    effective_inputs["message"] = message
+            else:
+                effective_inputs = {
+                    "message": message,
+                    "user_request": message,
+                    "topic": message,
+                    "user_prompt": message
+                }
+            
+            # --- INJECTION AUTO DU CONTEXTE DES CREWS ---
+            try:
+                from app.core.crew_manager import get_all_crews, get_crew, get_available_models
+                crews_summary = []
+                for c_name in get_all_crews():
+                    c_data = get_crew(c_name)
+                    desc = c_data.get("description", "Aucune description fournie.")
+                    
+                    tasks_info = []
+                    for t in c_data.get("tasks", []):
+                        t_desc = t.get("description", "").replace("\n", " ")
+                        t_out = t.get("expected_output", "").replace("\n", " ")
+                        tasks_info.append(f"  - But: {t_desc}\n    Output: {t_out}")
+                    
+                    tasks_str = "\n".join(tasks_info)
+                    crews_summary.append(f"### Crew: {c_name}\nDescription: {desc}\nTâches:\n{tasks_str}")
+                
+                effective_inputs["available_crews_context"] = "\n\n".join(crews_summary)
+
+                # Injection du contexte des LLMs (seulement ceux de l'API custom ILAAS)
+                llms = [m for m in get_available_models() if m.startswith("openai/")]
+                effective_inputs["available_llms_context"] = ", ".join(llms) if llms else "Aucun modèle trouvé."
+            except Exception as e:
+                crewai_logger.error(f"Erreur lors de l'injection du contexte des crews/LLMs: {e}")
+            # --------------------------------------------
             
             while retries <= max_retries:
                 try:
-                    result_container["result"] = crew.kickoff(inputs=inputs)
+                    result_container["result"] = crew.kickoff(inputs=effective_inputs)
                     if "error" in result_container:
                         del result_container["error"]
                     break

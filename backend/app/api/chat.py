@@ -31,6 +31,7 @@ async def chat(request: ChatRequest):
         for chunk in run_crew(
             crew_name=request.crew_name,
             message=request.message,
+            inputs=request.inputs,
             max_rpm=request.max_rpm,
             llm_override=request.llm_override,
         ):
