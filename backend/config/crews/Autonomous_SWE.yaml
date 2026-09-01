@@ -26,7 +26,7 @@ agents:
           - Pour créer un nouveau CREW : Utilise `write_file` pour générer un nouveau fichier `.yaml` dans `backend/config/crews/`.
           
           Tu as donc le pouvoir d'auto-amélioration et d'auto-expansion.
-      llm: 'openai/gpt-oss-120b'
+      llm: 'openai/mistral-small-4-119b'
       tools:
           - read_file
           - write_file
@@ -57,14 +57,17 @@ tasks:
              Utilise `execute_crew` en spécifiant `llm_override` (ex: `execute_crew(crew_name="Directory_Archifier", inputs_json='{{"directory_path": "../mon_projet"}}', llm_override="openai/qwen-3.6-35b-instruct")`).
              
           3. CRÉATION D'OUTILS ET DE CREWS (AUTO-EXPANSION) : 
-             - S'il te manque un outil (ex: scraper, connecteur API), tu PEUX le créer en modifiant `{project_path}/backend/app/tools/custom_tools.py`. Prends exemple sur le code existant.
-             - Si tu as besoin d'une équipe spécialisée qui n'existe pas, tu PEUX créer un nouveau fichier `.yaml` en utilisant son chemin absolu : `{project_path}/backend/config/crews/Nom_Du_Crew.yaml`, puis l'exécuter avec `execute_crew`.
+             - S'il te manque un outil (ex: scraper, connecteur API), tu PEUX le créer en modifiant `backend/app/tools/custom_tools.py` (ce chemin est fixe pour l'infrastructure de l'agent, ne le préfixe JAMAIS avec {project_path}). Prends exemple sur le code existant.
+             - Si tu as besoin d'une équipe spécialisée qui n'existe pas, tu PEUX créer un nouveau fichier `.yaml` sous le chemin fixe `backend/config/crews/Nom_Du_Crew.yaml`, puis l'exécuter avec `execute_crew`.
+             - RÈGLE CRITIQUE DE CHEMINS : Pour modifier le code métier du projet cible, utilise UNIQUEMENT des chemins commençant par `{project_path}` (ex: `{project_path}/src/main.py`). Ne crée JAMAIS de dossier redondant ou imbriqué comme `{project_path}/backend` si `{project_path}` est déjà `./backend` ou `./frontend`. Utilise `list_directory` pour vérifier l'arborescence avant d'écrire.
              
           4. VALIDATION ET TESTS : Tu restes responsable du résultat final. 
              - Utilise `terminal_runner` pour lancer des tests, valider la compilation, ou observer les erreurs (ajoute `| tail -n 50` si besoin).
              - Si un sous-crew ou un outil plante, c'est à toi d'analyser l'erreur et de corriger le problème ou la consigne.
              
           5. MÉMOIRE DES PERFORMANCES : Utilise tes outils natifs `search_memory` et `save_to_memory` pour rechercher et enregistrer les performances (réussites/échecs) de chaque LLM ou Crew selon le type de tâche, afin d'optimiser tes futurs choix.
+          
+          6. ANTI-HALLUCINATION (TRÈS IMPORTANT) : Avant de déclarer qu'une tâche est terminée ou d'écrire le rapport final, tu DOIS vérifier que tes modifications ont bien été appliquées. Utilise `read_file` ou `terminal_runner` (ex: `git diff`) pour lire les fichiers que tu as modifiés et vérifier visuellement que le code est bien présent sur le disque. Si le code n'y est pas, recommence l'écriture. Ne mens jamais sur tes actions, prouve-les.
           
       expected_output: >
           Le rapport final d'orchestration détaillant la stratégie adoptée, les crews invoqués, les outils/crews créés (le cas échéant), le résultat concret des actions, et la confirmation finale (via logs ou tests) que la demande de l'utilisateur a été entièrement satisfaite.

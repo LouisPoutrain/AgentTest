@@ -14,6 +14,7 @@ import {
 } from "@/lib/store";
 import { listCrews, streamChat, getCrew, listModels } from "@/lib/api";
 import type { Conversation, SSEChunk, CrewDetail } from "@/lib/types";
+import { useLotStore } from "@/src/stores/useLotStore";
 
 export default function Home() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -98,6 +99,15 @@ export default function Home() {
           llm_override: options?.llm_override || null,
         },
         (chunk: SSEChunk) => {
+          // Update lot store if it's a step
+          if (chunk.type === "log" && chunk.stepStatus) {
+            useLotStore.getState().setStep(convId, chunk.stepKey || "unknown", {
+              status: chunk.stepStatus as any,
+              tokens: chunk.tokens,
+              cost: chunk.cost,
+            });
+          }
+
           setConversations(prev => {
             const current = prev.find(c => c.id === updatedConv.id);
             if (!current) return prev;
@@ -105,7 +115,7 @@ export default function Home() {
             // Format log nicely
             let displayContent = chunk.content;
             if (chunk.type === "log") {
-               displayContent = `_${chunk.content}_`;
+               displayContent = `_⚙️ Orchestration en cours... Consultez le **[Tableau des Lots](/lots)** pour suivre la réflexion des agents en temps réel._`;
             } else if (chunk.type === "error") {
                displayContent = `**Erreur:** ${chunk.content}`;
             }
@@ -178,6 +188,7 @@ export default function Home() {
         {activeConversation ? (
           <ChatWindow 
             messages={activeConversation.messages}
+            activeId={activeConversation.id}
             isStreaming={!!streamingState[activeConversation.id]?.isStreaming}
             crewName={activeConversation.crewName}
             crewDetail={activeCrewDetail}

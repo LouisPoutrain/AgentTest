@@ -6,6 +6,7 @@ import { MessageSquare, Plus, FolderKanban, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Conversation } from "@/lib/types";
 import { ManageCrewsDialog } from "./ManageCrewsDialog";
+import { transitionClasses } from "@/src/theme";
 
 interface SidebarProps {
   conversations: Conversation[];
@@ -19,11 +20,12 @@ interface SidebarProps {
 
 export function Sidebar({ conversations, activeId, onSelect, onNew, availableCrews, onRefreshCrews, onDelete }: SidebarProps) {
   return (
-    <div className="w-64 h-full bg-bg-secondary border-r border-border flex flex-col shrink-0">
+    <div className={cn("w-64 h-full bg-bg-secondary border-r border-border flex flex-col shrink-0", transitionClasses.base)}>
       <div className="p-4">
         <Button 
           onClick={onNew}
-          className="w-full justify-start gap-2 bg-transparent border border-border hover:bg-bg-tertiary text-text-primary"
+          variant="agent-secondary"
+          className="w-full justify-start gap-2"
         >
           <Plus size={16} />
           Nouvelle conversation
@@ -31,7 +33,13 @@ export function Sidebar({ conversations, activeId, onSelect, onNew, availableCre
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col">
-        <div className="px-4 py-2 text-xs font-semibold text-text-secondary uppercase tracking-wider">
+        <div className="px-4 py-2 mt-2">
+          <a href="/lots" className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary/50 p-2 rounded-md transition-colors">
+            <FolderKanban size={16} />
+            Tableau des Lots
+          </a>
+        </div>
+        <div className="px-4 py-2 text-xs font-semibold text-text-secondary uppercase tracking-wider border-t border-border mt-2 pt-4">
           Conversations
         </div>
         <ScrollArea className="flex-1 px-2">
@@ -45,7 +53,7 @@ export function Sidebar({ conversations, activeId, onSelect, onNew, availableCre
                 <div 
                   key={conv.id} 
                   className={cn(
-                    "group flex items-center w-full px-2 py-1.5 rounded-md transition-colors",
+                    "group flex items-center w-full px-2 py-1.5 rounded-md transition-colors duration-200",
                     activeId === conv.id
                       ? "bg-bg-tertiary text-text-primary"
                       : "text-text-secondary hover:bg-bg-tertiary/50 hover:text-text-primary"
@@ -60,7 +68,7 @@ export function Sidebar({ conversations, activeId, onSelect, onNew, availableCre
                   </button>
                   <button 
                     onClick={(e) => { e.stopPropagation(); onDelete(conv.id); }} 
-                    className="opacity-0 group-hover:opacity-100 p-1.5 text-text-secondary hover:text-red-500 hover:bg-bg-primary rounded transition-all shrink-0 ml-1"
+                    className="opacity-0 group-hover:opacity-100 p-1.5 text-text-secondary hover:text-red-500 hover:bg-bg-primary rounded transition-all duration-200 shrink-0 ml-1"
                     title="Supprimer la conversation"
                   >
                     <Trash2 size={14} />

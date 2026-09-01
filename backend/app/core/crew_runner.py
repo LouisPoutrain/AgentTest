@@ -53,71 +53,87 @@ if not isinstance(sys.stdout, SafeStreamWriter):
 if not isinstance(sys.stderr, SafeStreamWriter):
     sys.stderr = SafeStreamWriter(sys.stderr)
 
-# ── Monkeypatch LiteLLM BEFORE crewai imports it ─────────────────────────────
+# ── Wrapper Sécurisé LiteLLM (Remplace le Monkeypatch Global) ─────────────────
 import litellm
+import threading
 
 _orig_completion = litellm.completion
+thread_queues = {}
+_litellm_patched = False
 
-def _patched_completion(*args, **kwargs):
-    # Try to log as JSON
-    try:
-        safe_kwargs = {k: v for k, v in kwargs.items()}
-        # Remove sensitive keys
-        for key in ["api_key", "headers", "Authorization"]:
-            if key in safe_kwargs:
-                safe_kwargs[key] = "***REDACTED***"
-        logging.error(f"🚀 LITELLM KWARGS JSON: {json.dumps(safe_kwargs)}")
-    except Exception as e:
-        logging.error(f"🚀 LITELLM KWARGS (non-json): {str(e)}")
-        
-    if "tools" in kwargs and not kwargs["tools"]:
-        del kwargs["tools"]
-        logging.error("🧹 Removed empty tools list from kwargs")
-        
-    # Prevent hallucinated native tool calls when tools are removed
-    if "tools" not in kwargs and "messages" in kwargs and isinstance(kwargs["messages"], list):
-        if kwargs.get("model", "").startswith("openai/"):
-            # Ajouter l'instruction de sécurité à la fin du dernier message utilisateur
-            for msg in reversed(kwargs["messages"]):
-                if msg.get("role") == "user":
-                    msg["content"] = str(msg.get("content", "")) + "\n\nCRITICAL SYSTEM INSTRUCTION: DO NOT use native tool calls or JSON functions. You MUST output your response as plain text in the exact Thought/Action/Action Input format requested. Native tool calls will crash the system."
-                    break
+def setup_litellm_interceptor():
+    """Installe le wrapper sécurisé sur litellm.completion s'il n'est pas déjà présent.
+    Cela évite le monkeypatching global sauvage à l'import du fichier.
+    """
+    global _litellm_patched
+    if _litellm_patched:
+        return
 
-    # Remove cache_breakpoint from messages, vLLM proxies reject it with 422
-    if "messages" in kwargs:
-        for msg in kwargs["messages"]:
-            if "cache_breakpoint" in msg:
-                del msg["cache_breakpoint"]
-                
-    import time
-    max_retries = 3
-    for attempt in range(max_retries):
+    def _secure_completion(*args, **kwargs):
+        # 1. Logging sécurisé (Sanitization des clés API)
         try:
-            return _orig_completion(*args, **kwargs)
+            safe_kwargs = {k: v for k, v in kwargs.items()}
+            for key in ["api_key", "headers", "Authorization"]:
+                if key in safe_kwargs:
+                    safe_kwargs[key] = "***REDACTED***"
+            logging.error(f"🚀 LITELLM KWARGS JSON: {json.dumps(safe_kwargs)}")
         except Exception as e:
-            err_str = str(e)
-            is_transient = (
-                "504" in err_str or "502" in err_str or "503" in err_str
-                or "Gateway Time-out" in err_str or "timeout" in err_str.lower()
-                or "connection error" in err_str.lower() or "RateLimitError" in type(e).__name__
-            )
-            if is_transient and attempt < max_retries - 1:
-                wait_time = 2 * (attempt + 1)
-                logging.warning(f"⚠️ Erreur temporaire LLM ({err_str[:100]}...), nouvelle tentative {attempt + 2}/{max_retries} dans {wait_time}s...")
-                time.sleep(wait_time)
-                continue
+            logging.error(f"🚀 LITELLM KWARGS (non-json): {str(e)}")
+            
+        # 2. Nettoyage préventif des arguments
+        if "tools" in kwargs and not kwargs["tools"]:
+            del kwargs["tools"]
+            logging.error("🧹 Removed empty tools list from kwargs")
+            
+        if "tools" not in kwargs and "messages" in kwargs and isinstance(kwargs["messages"], list):
+            if kwargs.get("model", "").startswith("openai/"):
+                for msg in reversed(kwargs["messages"]):
+                    if msg.get("role") == "user":
+                        msg["content"] = str(msg.get("content", "")) + "\n\nCRITICAL SYSTEM INSTRUCTION: DO NOT use native tool calls or JSON functions. You MUST output your response as plain text in the exact Thought/Action/Action Input format requested. Native tool calls will crash the system."
+                        break
 
-            import traceback
-            logging.error(f"❌ LITELLM ERROR IN PATCH: {type(e)} - {e}\n{traceback.format_exc()}")
-            if hasattr(e, "status_code"):
-                logging.error(f"❌ LITELLM ERROR STATUS CODE: {getattr(e, 'status_code')}")
-            if hasattr(e, "message"):
-                logging.error(f"❌ LITELLM ERROR MESSAGE: {getattr(e, 'message')}")
-            if hasattr(e, "response"):
-                logging.error(f"❌ LITELLM RESPONSE DUMP: {getattr(e, 'response')}")
-            raise e
+        if "messages" in kwargs:
+            for msg in kwargs["messages"]:
+                if "cache_breakpoint" in msg:
+                    del msg["cache_breakpoint"]
+                    
+        # 3. Exécution avec Retry et Capture de Métriques
+        import time
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = _orig_completion(*args, **kwargs)
+                # Envoi des métriques de coût/tokens dans la file SSE du thread
+                queue = thread_queues.get(threading.get_ident())
+                if queue and hasattr(response, "usage") and response.usage:
+                    tokens = getattr(response.usage, "total_tokens", 0)
+                    try:
+                        cost = litellm.completion_cost(completion_response=response)
+                    except Exception:
+                        cost = 0.0
+                    queue.put(json.dumps({"type": "metrics", "tokens": tokens, "cost": float(cost or 0.0)}))
+                return response
+            except Exception as e:
+                err_str = str(e)
+                is_transient = (
+                    "504" in err_str or "502" in err_str or "503" in err_str
+                    or "Gateway Time-out" in err_str or "timeout" in err_str.lower()
+                    or "connection error" in err_str.lower() or "RateLimitError" in type(e).__name__
+                )
+                if is_transient and attempt < max_retries - 1:
+                    wait_time = 2 * (attempt + 1)
+                    logging.warning(f"⚠️ Erreur temporaire LLM ({err_str[:100]}...), nouvelle tentative {attempt + 2}/{max_retries} dans {wait_time}s...")
+                    time.sleep(wait_time)
+                    continue
 
-litellm.completion = _patched_completion
+                import traceback
+                logging.error(f"❌ LITELLM ERROR IN SECURE WRAPPER: {type(e)} - {e}\n{traceback.format_exc()}")
+                if hasattr(e, "status_code"):
+                    logging.error(f"❌ LITELLM ERROR STATUS CODE: {getattr(e, 'status_code')}")
+                raise e
+
+    litellm.completion = _secure_completion
+    _litellm_patched = True
 
 # Now import crewai
 from crewai import Crew
@@ -200,6 +216,9 @@ def run_crew(
     if os.getenv("LLM_API_KEY"):
         os.environ["OPENAI_API_KEY"] = os.getenv("LLM_API_KEY")
 
+    # Installer le wrapper sécurisé litellm avant de lancer
+    setup_litellm_interceptor()
+
     # Yield un log initial
     yield _make_chunk("log", f"Chargement du Crew : {crew_name}...")
 
@@ -217,18 +236,21 @@ def run_crew(
         
         def agent_step_callback(agent_output):
             try:
+                log_text = ""
                 # agent_output peut être un AgentAction ou une liste
                 if hasattr(agent_output, 'log'):
-                    # Nettoyage basique pour l'UI
                     log_text = agent_output.log.strip()
-                    if log_text:
-                        log_queue.put(f"🧠 [Réflexion] {log_text}")
                 elif isinstance(agent_output, list) and len(agent_output) > 0 and hasattr(agent_output[0], 'log'):
                     log_text = agent_output[0].log.strip()
-                    if log_text:
-                        log_queue.put(f"🧠 [Réflexion] {log_text}")
                 elif isinstance(agent_output, str):
-                    log_queue.put(f"🧠 [Réflexion] {agent_output}")
+                    log_text = agent_output.strip()
+                
+                if log_text:
+                    q = thread_queues.get(threading.get_ident())
+                    if q:
+                        q.put(json.dumps({"type": "step", "status": "running", "log": log_text}))
+                    else:
+                        log_queue.put(f"🧠 [Réflexion] {log_text}")
             except Exception:
                 pass
 
@@ -292,94 +314,112 @@ def run_crew(
             max_retries = 3
             retries = 0
             
-            # Prepare inputs dictionary
-            effective_inputs: dict[str, Any] = {}
-            if inputs and isinstance(inputs, dict):
-                effective_inputs.update(inputs)
-                if "message" not in effective_inputs and message:
-                    effective_inputs["message"] = message
-            else:
-                effective_inputs = {
-                    "message": message,
-                    "user_request": message,
-                    "topic": message,
-                    "user_prompt": message
-                }
-            
-            # --- INJECTION AUTO DU CONTEXTE DES CREWS ---
+            thread_queues[threading.get_ident()] = log_queue
             try:
-                from app.core.crew_manager import get_all_crews, get_crew, get_available_models
-                crews_summary = []
-                for c_name in get_all_crews():
-                    c_data = get_crew(c_name)
-                    desc = c_data.get("description", "Aucune description fournie.")
+                # Prepare inputs dictionary
+                effective_inputs: dict[str, Any] = {}
+                if inputs and isinstance(inputs, dict):
+                    effective_inputs.update(inputs)
+                    if "message" not in effective_inputs and message:
+                        effective_inputs["message"] = message
+                else:
+                    effective_inputs = {
+                        "message": message,
+                        "user_request": message,
+                        "topic": message,
+                        "user_prompt": message
+                    }
                     
-                    tasks_info = []
-                    for t in c_data.get("tasks", []):
-                        t_desc = t.get("description", "").replace("\n", " ")
-                        t_out = t.get("expected_output", "").replace("\n", " ")
-                        tasks_info.append(f"  - But: {t_desc}\n    Output: {t_out}")
-                    
-                    tasks_str = "\n".join(tasks_info)
-                    crews_summary.append(f"### Crew: {c_name}\nDescription: {desc}\nTâches:\n{tasks_str}")
+                if "project_path" not in effective_inputs:
+                    try:
+                        from app.tools.custom_tools import _get_project_root
+                        effective_inputs["project_path"] = _get_project_root()
+                    except Exception:
+                        pass
                 
-                effective_inputs["available_crews_context"] = "\n\n".join(crews_summary)
-
-                # Injection du contexte des LLMs (seulement ceux de l'API custom ILAAS)
-                llms = [m for m in get_available_models() if m.startswith("openai/")]
-                effective_inputs["available_llms_context"] = ", ".join(llms) if llms else "Aucun modèle trouvé."
-            except Exception as e:
-                crewai_logger.error(f"Erreur lors de l'injection du contexte des crews/LLMs: {e}")
-            # --------------------------------------------
-            
-            while retries <= max_retries:
+                # --- INJECTION AUTO DU CONTEXTE DES CREWS ---
                 try:
-                    result_container["result"] = crew.kickoff(inputs=effective_inputs)
-                    if "error" in result_container:
-                        del result_container["error"]
-                    break
-                except Exception as exc:
-                    error_str = str(exc)
-                    if "429" in error_str or "Quota exceeded" in error_str or "Rate Limit" in error_str or "RESOURCE_EXHAUSTED" in error_str:
-                        retries += 1
-                        if retries > max_retries:
-                            result_container["error"] = Exception(f"Nombre maximal de tentatives atteint (429). {error_str}")
-                            break
+                    from app.core.crew_manager import get_all_crews, get_crew, get_available_models
+                    crews_summary = []
+                    for c_name in get_all_crews():
+                        c_data = get_crew(c_name)
+                        desc = c_data.get("description", "Aucune description fournie.")
                         
-                        delay = 60
-                        match = re.search(r"retry in (\d+(?:\.\d+)?)s", error_str)
-                        if match:
-                            delay = int(float(match.group(1))) + 2
-                            
-                        # Log pour affichage dans l'interface UI (SSE)
-                        crewai_logger.info(f"⚠️ Limite d'API atteinte (429). Pause automatique de {delay} secondes avant tentative {retries}/{max_retries}...")
-                        time.sleep(delay)
-                    else:
-                        result_container["error"] = exc
+                        tasks_info = []
+                        for t in c_data.get("tasks", []):
+                            t_desc = t.get("description", "").replace("\n", " ")
+                            t_out = t.get("expected_output", "").replace("\n", " ")
+                            tasks_info.append(f"  - But: {t_desc}\n    Output: {t_out}")
+                        
+                        tasks_str = "\n".join(tasks_info)
+                        crews_summary.append(f"### Crew: {c_name}\nDescription: {desc}\nTâches:\n{tasks_str}")
+                    
+                    effective_inputs["available_crews_context"] = "\n\n".join(crews_summary)
+
+                    # Injection du contexte des LLMs (seulement ceux de l'API custom ILAAS)
+                    llms = [m for m in get_available_models() if m.startswith("openai/")]
+                    effective_inputs["available_llms_context"] = ", ".join(llms) if llms else "Aucun modèle trouvé."
+                except Exception as e:
+                    crewai_logger.error(f"Erreur lors de l'injection du contexte des crews/LLMs: {e}")
+                # --------------------------------------------
+                
+                while retries <= max_retries:
+                    try:
+                        result_container["result"] = crew.kickoff(inputs=effective_inputs)
+                        if "error" in result_container:
+                            del result_container["error"]
                         break
+                    except Exception as exc:
+                        error_str = str(exc)
+                        if "429" in error_str or "Quota exceeded" in error_str or "Rate Limit" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                            retries += 1
+                            if retries > max_retries:
+                                result_container["error"] = Exception(f"Nombre maximal de tentatives atteint (429). {error_str}")
+                                break
+                            
+                            delay = 60
+                            match = re.search(r"retry in (\d+(?:\.\d+)?)s", error_str)
+                            if match:
+                                delay = int(float(match.group(1))) + 2
+                                
+                            # Log pour affichage dans l'interface UI (SSE)
+                            crewai_logger.info(f"⚠️ Limite d'API atteinte (429). Pause automatique de {delay} secondes avant tentative {retries}/{max_retries}...")
+                            time.sleep(delay)
+                        else:
+                            result_container["error"] = exc
+                            break
+            finally:
+                thread_queues.pop(threading.get_ident(), None)
 
         thread = threading.Thread(target=_kickoff, daemon=True)
         thread.start()
 
         # Streamer les logs pendant que le thread tourne
-        while thread.is_alive():
+        def _process_queue():
             while not log_queue.empty():
                 try:
                     msg = log_queue.get_nowait()
-                    if msg.strip():
+                    if not msg.strip(): continue
+                    try:
+                        data = json.loads(msg)
+                        if isinstance(data, dict) and "type" in data:
+                            if data["type"] == "step":
+                                yield _make_chunk("log", f"🧠 [Réflexion] {data.get('log', '')}", stepStatus=data.get("status"), stepKey="agent_step")
+                            elif data["type"] == "metrics":
+                                yield _make_chunk("log", f"📊 [Metrics] Tokens: {data.get('tokens')} | Cost: ${data.get('cost')}", stepStatus="running", tokens=data.get("tokens"), cost=data.get("cost"), stepKey="agent_step")
+                        else:
+                            yield _make_chunk("log", msg)
+                    except json.JSONDecodeError:
                         yield _make_chunk("log", msg)
                 except queue.Empty:
                     break
+
+        while thread.is_alive():
+            yield from _process_queue()
             time.sleep(0.1)
 
         # Vider la queue restante
-        while not log_queue.empty():
-            try:
-                msg = log_queue.get_nowait()
-                if msg.strip():
-                    yield _make_chunk("log", msg)
-            except queue.Empty:
-                break
+        yield from _process_queue()
 
         # Nettoyer les handlers
         crewai_logger.removeHandler(queue_handler)

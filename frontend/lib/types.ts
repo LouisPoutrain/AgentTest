@@ -52,6 +52,10 @@ export interface SSEChunk {
   timestamp: string;
   code?: number;
   available_models?: string[];
+  stepStatus?: string;
+  stepKey?: string;
+  tokens?: number;
+  cost?: number;
 }
 
 export interface StreamChatOptions {
