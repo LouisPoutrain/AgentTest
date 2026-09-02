@@ -5,10 +5,20 @@
   "main": "main.js",
   "description": "Desktop Application for Agent Zouglou",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-builder -m"
+  },
+  "build": {
+    "appId": "com.louispoutrain.agentzouglou",
+    "productName": "Agent Zouglou",
+    "mac": {
+      "icon": "icon.png",
+      "target": "dir"
+    }
   },
   "devDependencies": {
-    "electron": "^32.3.3"
+    "electron": "^32.3.3",
+    "electron-builder": "^26.15.3"
   },
   "dependencies": {
     "@electron/get": "^5.1.0",
