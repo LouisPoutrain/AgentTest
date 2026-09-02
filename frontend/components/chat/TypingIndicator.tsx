@@ -1,9 +1,22 @@
+import { BrainCircuit } from "lucide-react";
+import { motion } from "framer-motion";
+
 export function TypingIndicator() {
   return (
-    <div className="flex items-center gap-1.5 px-4 py-3 bg-bg-secondary/30 rounded-lg w-fit ml-12">
-      <div className="w-2 h-2 rounded-full bg-text-secondary/50 animate-bounce" style={{ animationDelay: "0ms" }} />
-      <div className="w-2 h-2 rounded-full bg-text-secondary/50 animate-bounce" style={{ animationDelay: "150ms" }} />
-      <div className="w-2 h-2 rounded-full bg-text-secondary/50 animate-bounce" style={{ animationDelay: "300ms" }} />
+    <div className="flex items-center gap-2 px-4 md:px-8 py-2 w-full mt-2">
+      <div className="max-w-3xl flex gap-4 w-full">
+        <div className="w-8 flex justify-center mt-1">
+          <BrainCircuit size={16} className="text-accent animate-pulse" />
+        </div>
+        <motion.div 
+          initial={{ opacity: 0.5 }}
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="text-sm text-text-secondary italic flex items-center"
+        >
+          Agent Zouglou réfléchit...
+        </motion.div>
+      </div>
     </div>
   );
 }
