@@ -1,8 +1,7 @@
 crew_settings:
   process: Séquentiel
-  memory: false
+  memory: true
   max_rpm: 10
-
 agents:
 - name: Product_Manager
   role: Chef de Produit & Idéateur d'Applications
@@ -23,6 +22,17 @@ agents:
   llm: openai/qwen-3.6-35b-instruct
   tools:
   - write_file
+  verbose: true
+  allow_delegation: false
+
+- name: Validation_Agent
+  role: Critique d'Architecture & Expert Qualité
+  goal: Analyser le plan d'architecture pour identifier les failles, les oublis de sécurité ou les problèmes de scalabilité.
+  backstory: >
+    Tu es un expert en revue d'architecture. Ton rôle est d'être l'avocat du diable. Tu analyses le plan proposé et tu forces l'architecte à justifier ses choix ou à corriger des erreurs avant que le projet ne commence.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - read_file
   verbose: true
   allow_delegation: false
 
@@ -51,4 +61,14 @@ tasks:
        - Étapes de développement pour le CrewManager
     5. Utilise 'write_file' pour enregistrer OBLIGATOIREMENT ce plan sous 'ARCHITECTURE_PROPOSAL.md'.
   agent: Lead_Architecte_Solution
-  expected_output: La confirmation de l'outil 'write_file' attestant que 'ARCHITECTURE_PROPOSAL.md' a bien été créé avec le plan d'implémentation complet.
+  expected_output: La confirmation de l'outil 'write_file' attestant que 'ARCHITECTURE_PROPOSAL.md' a bien été créé.
+
+- description: >
+    Analyse le fichier 'ARCHITECTURE_PROPOSAL.md' fraîchement créé :
+
+    1. Utilise 'read_file' pour lire le plan.
+    2. Identifie les points faibles : sécurité, scalabilité, complexité inutile ou oublis de fonctionnalités MVP.
+    3. Rédige une critique constructive détaillée.
+    4. Si le plan est insuffisant, demande à l'architecte de le modifier. S'il est valide, donne ton feu vert.
+  agent: Validation_Agent
+  expected_output: Un rapport de validation indiquant soit le "FEU VERT" pour l'implémentation, soit une liste de corrections obligatoires.

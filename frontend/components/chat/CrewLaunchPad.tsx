@@ -177,6 +177,53 @@ export function CrewLaunchPad({
         required: false,
       });
     }
+    // 2ter. STATE OF THE ART CREW: Academic research and PDF generation
+    else if (lowerCrew.includes("stateoftheart")) {
+      dynamicFields.push({
+        key: "topic",
+        label: "Sujet de recherche de l'État de l'Art",
+        placeholder: "Ex: Modèles de langage spécialisés dans le code, RAG avec graphes de connaissances...",
+        type: "textarea",
+        required: true,
+        description: "Le chercheur va trouver les papers et repos de référence, puis générer un PDF complet et une page interactive.",
+        presets: [
+          { label: "RAG & Knowledge Graphs", value: "État de l'art du Retrieval-Augmented Generation couplé aux bases de données orientées graphe (Knowledge Graphs)" },
+          { label: "Agents IA Autonomes", value: "Architectures récentes pour les systèmes multi-agents IA autonomes et leur coopération en 2026" },
+          { label: "IA & Génération Vidéo", value: "Modèles fondationnels récents pour la génération et l'édition de vidéos par IA" },
+        ],
+      });
+      dynamicFields.push({
+        key: "output_dir",
+        label: "Dossier de destination (où enregistrer les PDF, HTML et ressources)",
+        placeholder: "./research_results",
+        defaultValue: "./research_results",
+        type: "path",
+        required: true,
+      });
+    }
+    // 2.quater EDUCATIONAL CONTENT CREATOR: Convert research into educational courses
+    else if (lowerCrew.includes("educational")) {
+      dynamicFields.push({
+        key: "topic",
+        label: "Sujet du cours / de la ressource éducative",
+        placeholder: "Ex: Les architectures JEPA et les World Models...",
+        type: "textarea",
+        required: true,
+        description: "Le pédagogue va chercher des informations sur ce sujet, en se basant sur les fichiers existants du dossier.",
+        presets: [
+          { label: "JEPA & World Models", value: "architectures JEPA et world modèle" },
+          { label: "React & Next.js", value: "React 19 et Next.js 16 pour débutants" },
+        ],
+      });
+      dynamicFields.push({
+        key: "project_path",
+        label: "Dossier cible (où lire l'État de l'art et générer les cours)",
+        placeholder: "../SOTA_JEPA:WM",
+        defaultValue: "../SOTA_JEPA:WM",
+        type: "path",
+        required: true,
+      });
+    }
     // 3. CREW MANAGER: Dynamic Crew generator from any Markdown Architecture/Audit file
     else if (lowerCrew.includes("crewmanager") || lowerCrew.includes("manager")) {
       dynamicFields.push({
@@ -480,6 +527,14 @@ export function CrewLaunchPad({
       if (inputs.focus && inputs.focus.trim()) {
         synthesizedMessage += ` (Angle d'analyse / Précisions : ${inputs.focus.trim()})`;
       }
+    } else if (lowerCrew.includes("stateoftheart")) {
+      const topic = inputs.topic ? inputs.topic.trim() : "";
+      const outDir = inputs.output_dir || "./research_results";
+      synthesizedMessage = `Sujet : ${topic}\nDossier de sortie : ${outDir}`;
+    } else if (lowerCrew.includes("educational")) {
+      const topic = inputs.topic ? inputs.topic.trim() : "";
+      const proj = inputs.project_path || "../SOTA_JEPA:WM";
+      synthesizedMessage = `Sujet : ${topic}\nDossier : ${proj}`;
     } else if (lowerCrew.includes("crewmanager") || lowerCrew.includes("manager")) {
       const plan = inputs.plan_path ? inputs.plan_path.trim() : "frontend/ARCHITECTURE_PROPOSAL.md";
       synthesizedMessage = plan;
@@ -537,7 +592,7 @@ export function CrewLaunchPad({
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto py-8 px-4 flex flex-col gap-6 animate-in fade-in duration-300">
+    <div className="w-full mx-auto py-4 px-3 flex flex-col gap-4 animate-in fade-in duration-300">
       {/* Header Info Card */}
       <Card className="border-border/60 bg-gradient-to-br from-bg-secondary/90 via-bg-secondary/60 to-bg-tertiary/40 backdrop-blur-md shadow-lg">
         <CardHeader className="pb-4">
@@ -566,7 +621,7 @@ export function CrewLaunchPad({
                 <CardTitle className="text-2xl font-bold flex items-center gap-2 text-text-primary">
                   {crewName}
                   <Badge variant="outline" className="text-xs font-normal border-accent/40 text-accent bg-accent/5">
-                    {crewDetail?.crew_settings?.process || "Séquentiel"}
+                    {typeof crewDetail?.crew_settings?.process === "string" ? crewDetail.crew_settings.process : "Séquentiel"}
                   </Badge>
                   {crewDetail?.crew_settings?.memory && (
                     <Badge variant="outline" className="text-xs font-normal border-purple-500/40 text-purple-400 bg-purple-500/5">

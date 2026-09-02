@@ -1,6 +1,6 @@
 crew_settings:
-  process: Séquentiel
-  memory: false
+  process: hierarchical
+  memory: true
   max_rpm: 10
 agents:
 - name: Explorateur_Projet
@@ -43,15 +43,13 @@ tasks:
 
     1. Utilise ''list_directory'' sur le dossier racine ("{message}"). 2. Si tu vois
     des sous-dossiers prometteurs (backend, frontend, core), utilise à nouveau ''list_directory''
-    sur ces chemins. 3. Ta mission est UNIQUEMENT de fournir la liste des 3 à 5 fichiers
-    les plus importants à lire pour un audit de sécurité (ex: main.py, router, config...).
+    sur ces chemins. 3. Ta mission est d''identifier TOUS les fichiers critiques nécessaires
+    pour un audit de sécurité exhaustif (ex: main.py, router, config, middlewares...).
     4. Ne fournis que les chemins complets de ces fichiers. Ne choisis jamais de fichiers
     .log ou package-lock.json.
-
     '
-  expected_output: 'Une liste précise des 3 à 5 chemins de fichiers critiques à auditer.
-
-    '
+  expected_output: 'Une liste exhaustive des chemins de fichiers critiques à auditer.
+  '
   agent: Explorateur_Projet
 - description: 'L''Explorateur a identifié les fichiers critiques.
 
@@ -59,20 +57,16 @@ tasks:
     par l''Explorateur. 2. Analyse le code pour trouver des bugs, des failles de sécurité,
     ou proposer des optimisations. 3. Résume tes découvertes sous forme de notes claires
     pour chaque fichier audité.
-
     '
   expected_output: 'Un rapport d''audit brut contenant les problèmes identifiés fichier
     par fichier, prêt à être mis en forme.
-
     '
   agent: Auditeur_Code
 - description: 'À partir du rapport d''audit brut, rédige la Review finale. Utilise
     ton outil ''write_file'' pour sauvegarder ce rapport dans le dossier "{message}"
     sous le nom ''CODE_REVIEW.md''.
-
     '
   expected_output: 'Un message confirmant que le fichier ''CODE_REVIEW.md'' a été
     créé avec succès, structuré par niveaux de criticité.
-
     '
   agent: Lead_Tech_Redacteur

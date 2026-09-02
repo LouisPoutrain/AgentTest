@@ -1,0 +1,250 @@
+crew_settings:
+  process: Séquentiel
+  memory: false
+  max_rpm: 10
+  config:
+    llm:
+      model: openai/qwen-3.6-35b-instruct
+      temperature: 0.7
+      max_tokens: 4000
+agents:
+- name: Researcher
+  role: Expert en Recherche Académique et Open Source
+  goal: Trouver les papers de recherche et dépôts GitHub les plus pertinents pour
+    un sujet donné
+  backstory: 'Vous êtes un chercheur expérimenté avec plus de 10 ans d''expérience
+    dans l''analyse des avancées
+
+    scientifiques. Vous connaissez les meilleures sources (arXiv, Papers With Code,
+    GitHub) et savez
+
+    identifier les travaux de référence. Votre expertise couvre tous les domaines
+    de l''IA, du Machine
+
+    Learning et de l''informatique.
+
+    '
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - research_state_of_the_art
+  - web_search
+  - read_file
+  - write_file
+  verbose: true
+  allow_delegation: false
+- name: Downloader
+  role: Gestionnaire de Téléchargements
+  goal: Télécharger les papers et dépôts GitHub trouvés dans un dossier local
+  backstory: 'Vous êtes un expert en gestion de fichiers et en téléchargements. Vous
+    savez organiser les ressources
+
+    téléchargées dans une structure de dossiers claire et gérer les erreurs de téléchargement.
+
+    Votre précision garantit que toutes les ressources sont disponibles localement
+    pour analyse.
+
+    '
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - download_resources
+  - read_file
+  - write_file
+  - delete_path
+  verbose: true
+  allow_delegation: false
+- name: Reporter
+  role: Rédacteur Technique et Générateur de Rapports
+  goal: Créer un bilan structuré et complet de l'état de l'art sous forme de PDF
+  backstory: 'Vous êtes un rédacteur technique expérimenté qui sait transformer des
+    données complexes en rapports
+
+    clairs et professionnels. Vous maîtrisez la mise en forme de documents techniques
+    avec des
+
+    références précises et une structure logique.
+
+    '
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - generate_state_of_the_art_report
+  - read_file
+  - write_file
+  verbose: true
+  allow_delegation: false
+- name: Visualizer
+  role: Designer d'Interfaces et Créateur de Visualisations
+  goal: Générer une page HTML interactive avec graphique reliant les sources pour
+    expliquer le sujet
+  backstory: 'Vous êtes un designer d''interfaces et un expert en visualisation de
+    données. Vous savez créer des
+
+    pages web interactives avec des graphiques modernes qui rendent les informations
+    complexes accessibles
+
+    et compréhensibles. Votre travail aide les utilisateurs à comprendre les relations
+    entre les sources.
+
+    '
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - generate_state_of_the_art_html
+  - read_file
+  - write_file
+  verbose: true
+  allow_delegation: false
+tasks:
+- description: '**PHASE 1 : Recherche de l''État de l''Art**
+
+
+    En tant qu''expert en recherche académique, votre mission est de trouver les papers
+    de recherche
+
+    les plus pertinents et les dépôts GitHub de référence pour le sujet demandé.
+
+
+    **Étapes à suivre :**
+
+    1. Utilisez l''outil `research_state_of_the_art` avec le sujet fourni
+
+    2. Analysez les résultats pour identifier les sources les plus pertinentes
+
+    3. Créez une liste structurée des papers et dépôts à télécharger
+
+    4. Sauvegardez les résultats intermédiaires dans un fichier JSON pour référence
+    future
+
+
+    **Critères de qualité :**
+
+    - Privilégiez les papers récents (2023-2025)
+
+    - Incluez des benchmarks et datasets si disponibles
+
+    - Ajoutez des dépôts GitHub avec des implémentations de référence
+
+    - Vérifiez que les URLs sont accessibles
+
+
+    **Sortie attendue :**
+
+    - Un fichier `findings.json` contenant toutes les sources identifiées
+
+    - Une liste priorisée des ressources à télécharger
+
+    '
+  agent: Researcher
+  expected_output: 'Un fichier `findings.json` complet contenant :
+
+    - Tous les papers de recherche trouvés (titre, URL, source, description)
+
+    - Tous les dépôts GitHub pertinents (nom, URL, description, étoiles)
+
+    - Un résumé exécutif des avancées majeures
+
+    - Des références complémentaires utiles
+
+
+    Le fichier doit être structuré et prêt pour la phase de téléchargement.
+
+    '
+- description: "**PHASE 2 : Téléchargement des Ressources**\n\nEn tant que gestionnaire\
+    \ de téléchargements, votre mission est de récupérer toutes les ressources\nidentifiées\
+    \ lors de la phase de recherche et de les organiser dans un dossier local structuré.\n\
+    \n**Étapes à suivre :**\n1. Lisez le fichier `findings.json` généré par le Researcher\n\
+    2. Utilisez l'outil `download_resources` pour télécharger chaque ressource\n3.\
+    \ Organisez les fichiers téléchargés dans une structure de dossiers claire :\n\
+    \   - `papers/` pour les papers PDF\n   - `repos/` pour les dépôts GitHub clonés\n\
+    \   - `datasets/` pour les datasets (si disponibles)\n4. Gérez les erreurs de\
+    \ téléchargement et générez un rapport\n\n**Critères de qualité :**\n- Tous les\
+    \ papers doivent être téléchargés en PDF\n- Tous les dépôts GitHub doivent être\
+    \ clonés avec git\n- La structure de dossiers doit être claire et intuitive\n\
+    - Un rapport de téléchargement doit être généré\n\n**Sortie attendue :**\n- Un\
+    \ dossier `downloaded_resources/` contenant toutes les ressources organisées\n\
+    - Un fichier `download_report.json` détaillant les succès et échecs\n"
+  agent: Downloader
+  expected_output: 'Un dossier `downloaded_resources/` structuré contenant :
+
+    - Sous-dossier `papers/` avec tous les papers PDF téléchargés
+
+    - Sous-dossier `repos/` avec tous les dépôts GitHub clonés
+
+    - Sous-dossier `datasets/` (si applicable)
+
+
+    Un fichier `download_report.json` avec :
+
+    - Liste des ressources téléchargées avec succès
+
+    - Liste des échecs avec raisons
+
+    - Statistiques (nombre total, succès, échecs)
+
+    '
+- description: |
+    **PHASE 3 : Génération du Bilan Structuré (Markdown)**
+
+    En tant que rédacteur technique, votre mission est de transformer les résultats de la recherche
+    en un rapport professionnel et complet au format Markdown.
+
+    **Étapes à suivre :**
+    1. Lisez le fichier `findings.json` pour obtenir les résultats de recherche
+    2. Utilisez l'outil `generate_state_of_the_art_report` pour créer le document
+    3. Structurez le rapport avec :
+       - Titre principal avec le sujet
+       - Résumé exécutif
+       - Section Papers de Recherche
+       - Section Dépôts GitHub
+       - Section Références Complémentaires
+       - Footer avec métadonnées
+    4. Sauvegardez le rapport Markdown dans le dossier de sortie
+
+    **Critères de qualité :**
+    - Le Markdown doit être bien formaté (titres, listes, liens)
+    - Toutes les sources doivent être correctement référencées
+    - Le document doit être clair et professionnel
+
+    **Sortie attendue :**
+    - Un fichier `state_of_the_art_[sujet].md` complet et professionnel
+  agent: Reporter
+  expected_output: |
+    Un fichier Markdown `state_of_the_art_[sujet].md` contenant :
+    - Titre principal avec le sujet de recherche
+    - Résumé exécutif des avancées majeures
+    - Section détaillée des papers de recherche (titre, source, URL, description)
+    - Section détaillée des dépôts GitHub (nom, description, étoiles, URL)
+    - Section de références complémentaires
+    - Footer avec informations de génération
+
+    Le document doit être bien formaté, professionnel et clair.
+- description: "**PHASE 4 : Génération de la Page HTML Interactive**\n\nEn tant que\
+    \ designer d'interfaces, votre mission est de créer une page web interactive\n\
+    qui visualise les sources et leurs relations pour expliquer le sujet de manière\
+    \ visuelle.\n\n**Étapes à suivre :**\n1. Lisez le fichier `findings.json` pour\
+    \ obtenir les résultats de recherche\n2. Utilisez l'outil `generate_state_of_the_art_html`\
+    \ pour créer la page HTML\n3. Intégrez un graphique interactif (Chart.js) montrant\
+    \ :\n   - Les papers comme des bulles (taille = importance)\n   - Les dépôts GitHub\
+    \ comme des bulles différentes\n   - Les relations entre sources\n   - Des tooltips\
+    \ avec détails au survol\n4. Ajoutez une section \"Comment utiliser\" pour guider\
+    \ l'utilisateur\n5. Sauvegardez la page HTML dans le dossier de sortie\n\n**Critères\
+    \ de qualité :**\n- La page doit être responsive (mobile et desktop)\n- Le graphique\
+    \ doit être interactif et informatif\n- Le design doit être moderne et professionnel\n\
+    - La page doit être prête pour le partage\n\n**Sortie attendue :**\n- Une page\
+    \ HTML `state_of_the_art_[sujet].html` interactive\n- Un design moderne avec gradient\
+    \ et animations\n- Un graphique Chart.js fonctionnel\n"
+  agent: Visualizer
+  expected_output: 'Une page HTML `state_of_the_art_[sujet].html` contenant :
+
+    - Un titre clair avec le sujet de recherche
+
+    - Un graphique interactif Chart.js montrant les sources et leurs relations
+
+    - Des cartes détaillées pour chaque source (type, description, URL)
+
+    - Une section "Comment utiliser" avec instructions
+
+    - Un footer avec métadonnées
+
+    - Un design moderne avec gradient violet et animations
+
+
+    La page doit être responsive et fonctionnelle dans tous les navigateurs modernes.'

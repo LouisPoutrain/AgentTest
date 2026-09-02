@@ -62,9 +62,7 @@ thread_queues = {}
 _litellm_patched = False
 
 def setup_litellm_interceptor():
-    """Installe le wrapper sécurisé sur litellm.completion s'il n'est pas déjà présent.
-    Cela évite le monkeypatching global sauvage à l'import du fichier.
-    """
+    """Installe le wrapper sécurisé sur litellm.completion s'il n'est pas déjà présent."""
     global _litellm_patched
     if _litellm_patched:
         return
@@ -98,20 +96,19 @@ def setup_litellm_interceptor():
                     del msg["cache_breakpoint"]
                     
         # 3. Exécution avec Retry et Capture de Métriques
-        import time
         max_retries = 3
         for attempt in range(max_retries):
             try:
                 response = _orig_completion(*args, **kwargs)
                 # Envoi des métriques de coût/tokens dans la file SSE du thread
-                queue = thread_queues.get(threading.get_ident())
-                if queue and hasattr(response, "usage") and response.usage:
+                q = thread_queues.get(threading.get_ident())
+                if q and hasattr(response, "usage") and response.usage:
                     tokens = getattr(response.usage, "total_tokens", 0)
                     try:
                         cost = litellm.completion_cost(completion_response=response)
                     except Exception:
                         cost = 0.0
-                    queue.put(json.dumps({"type": "metrics", "tokens": tokens, "cost": float(cost or 0.0)}))
+                    q.put(json.dumps({"type": "metrics", "tokens": tokens, "cost": float(cost or 0.0)}))
                 return response
             except Exception as e:
                 err_str = str(e)
@@ -148,7 +145,6 @@ from app.core.tool_registry import AVAILABLE_TOOLS
 
 # ── Custom Log Handler (thread-safe queue) ───────────────────────────────────
 
-
 class QueueLogHandler(logging.Handler):
     """Handler qui pousse chaque log dans une queue thread-safe."""
 
@@ -165,7 +161,6 @@ class QueueLogHandler(logging.Handler):
             
             # Si le log contient le payload complet, on le simplifie pour le frontend
             if "🚀 LITELLM KWARGS JSON:" in msg or "🚀 LITELLM KWARGS (non-json):" in msg:
-                # On ne transmet qu'un petit message sympa à l'UI
                 self.log_queue.put("🧠 L'agent réfléchit (Requête envoyée au LLM)...")
                 return
                 
@@ -174,70 +169,57 @@ class QueueLogHandler(logging.Handler):
             self.handleError(record)
 
 
-# ── Exécution principale ─────────────────────────────────────────────────────
+# ── Service d'Orchestration du Crew ──────────────────────────────────────────
 
-
-def _make_chunk(chunk_type: str, content: str, **extra: Any) -> str:
-    """Fabrique un chunk SSE formaté en JSON."""
-    data = {
-        "type": chunk_type,
-        "content": content,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        **extra,
-    }
-    return json.dumps(data, ensure_ascii=False)
-
-
-def run_crew(
-    crew_name: str,
-    message: str = "",
-    inputs: dict[str, Any] | None = None,
-    max_rpm: int = 15,
-    llm_override: str | None = None,
-) -> Generator[str, None, None]:
-    """Lance l'exécution d'un Crew et yield des chunks SSE.
-
-    Yields
-    ------
-    str
-        Chunks JSON de type 'log', 'result', ou 'error'.
+class CrewExecutionService:
     """
-    config_path = CREWS_DIR / (
-        crew_name if crew_name.endswith(".yaml") else f"{crew_name}.yaml"
-    )
+    Service responsable de l'instanciation, de la configuration et de l'exécution
+    d'un Crew AI avec gestion des logs et du streaming SSE.
+    """
 
-    if not config_path.exists():
-        yield _make_chunk("error", f"Crew '{crew_name}' introuvable.")
-        return
+    @staticmethod
+    def _make_chunk(chunk_type: str, content: str, **extra: Any) -> str:
+        """Fabrique un chunk SSE formaté en JSON."""
+        data = {
+            "type": chunk_type,
+            "content": content,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            **extra,
+        }
+        return json.dumps(data, ensure_ascii=False)
 
-    # Mappage des variables d'environnement pour LiteLLM (Custom OpenAI endpoints)
-    if os.getenv("LLM_BASE_URL"):
-        os.environ["OPENAI_API_BASE"] = os.getenv("LLM_BASE_URL")
-    if os.getenv("LLM_API_KEY"):
-        os.environ["OPENAI_API_KEY"] = os.getenv("LLM_API_KEY")
+    @staticmethod
+    def _resolve_config_path(crew_name: str) -> Path:
+        """Résout le chemin du fichier de configuration du crew."""
+        return CREWS_DIR / (
+            crew_name if crew_name.endswith(".yaml") else f"{crew_name}.yaml"
+        )
 
-    # Installer le wrapper sécurisé litellm avant de lancer
-    setup_litellm_interceptor()
+    @staticmethod
+    def _configure_env_variables():
+        """Configure les variables d'environnement pour LiteLLM."""
+        if os.getenv("LLM_BASE_URL"):
+            os.environ["OPENAI_API_BASE"] = os.getenv("LLM_BASE_URL")
+        if os.getenv("LLM_API_KEY"):
+            os.environ["OPENAI_API_KEY"] = os.getenv("LLM_API_KEY")
 
-    # Yield un log initial
-    yield _make_chunk("log", f"Chargement du Crew : {crew_name}...")
-
-    try:
-        # Charger les settings
-        crew_settings = get_crew_settings_from_yaml(config_path)
-        effective_rpm = max_rpm or crew_settings.get("max_rpm", 15)
-
-        yield _make_chunk("log", f"Paramètres : process={crew_settings['process']}, memory={crew_settings['memory']}, max_rpm={effective_rpm}")
-
-        # Configurer la capture de logs via queue
-        log_queue: queue.Queue[str] = queue.Queue()
+    @staticmethod
+    def _setup_logging(log_queue: queue.Queue) -> QueueLogHandler:
+        """Configure le handler de logs pour capturer les logs dans la queue."""
         queue_handler = QueueLogHandler(log_queue)
         queue_handler.setFormatter(logging.Formatter("%(message)s"))
-        
+        # Note: On ne l'ajoute pas au logger racine globalement ici pour éviter
+        # de polluer d'autres logs, il est géré via la queue
+        return queue_handler
+
+    def _create_agents_and_tasks(self, config_path: Path, llm_override: str | None, log_queue: queue.Queue):
+        """
+        Crée les agents et les tâches à partir du YAML.
+        Inclut un callback pour capturer les réflexions des agents.
+        """
         def agent_step_callback(agent_output):
             try:
                 log_text = ""
-                # agent_output peut être un AgentAction ou une liste
                 if hasattr(agent_output, 'log'):
                     log_text = agent_output.log.strip()
                 elif isinstance(agent_output, list) and len(agent_output) > 0 and hasattr(agent_output[0], 'log'):
@@ -254,198 +236,115 @@ def run_crew(
             except Exception:
                 pass
 
-        # Instancier agents et tâches
         agents = create_agents_from_yaml(
             config_path,
             available_tools=AVAILABLE_TOOLS,
             llm_override=llm_override,
             step_callback=agent_step_callback,
         )
-        yield _make_chunk("log", f"{len(agents)} agent(s) chargé(s).")
+        tasks = create_tasks_from_yaml(
+            config_path,
+            agents=agents,
+        )
+        return agents, tasks
 
-        tasks = create_tasks_from_yaml(config_path, agents)
-        yield _make_chunk("log", f"{len(tasks)} tâche(s) chargée(s).")
+    def _execute_crew_and_stream(self, crew: Crew, log_queue: queue.Queue) -> Generator[str, None, None]:
+        """
+        Lance le kickoff du crew et stream les logs depuis la queue jusqu'à la fin.
+        """
+        def stream_logs():
+            while True:
+                try:
+                    msg = log_queue.get(timeout=1)
+                    yield self._make_chunk("log", msg)
+                except queue.Empty:
+                    break
+                except Exception as e:
+                    logging.error(f"Error reading log queue: {e}")
+                    break
+
+        try:
+            # Stream les logs existants pendant l'exécution
+            for log_chunk in stream_logs():
+                yield log_chunk
+
+            # Exécution principale
+            result = crew.kickoff()
+            
+            # Stream les logs restants après exécution
+            for log_chunk in stream_logs():
+                yield log_chunk
+
+            # Yield le résultat final
+            yield self._make_chunk("result", str(result))
+
+        except Exception as e:
+            logging.error(f"Crew execution error: {e}")
+            yield self._make_chunk("error", str(e))
 
 
-        
-        # Configurer la capture de logs par crew (Fichier)
-        logs_dir = Path("logs")
-        logs_dir.mkdir(exist_ok=True)
-        timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-        crew_log_file = logs_dir / f"{crew_name}_{timestamp_str}.log"
-        file_handler = logging.FileHandler(crew_log_file, encoding='utf-8')
-        file_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+# ── Interface Publique ──────────────────────────────────────────────────────
 
-        # Attacher le handler aux loggers CrewAI
-        crewai_logger = logging.getLogger("crewai")
-        crewai_logger.addHandler(queue_handler)
-        crewai_logger.addHandler(file_handler)
-        crewai_logger.setLevel(logging.INFO)
+def run_crew(
+    crew_name: str,
+    message: str = "",
+    inputs: dict[str, Any] | None = None,
+    max_rpm: int = 15,
+    llm_override: str | None = None,
+) -> Generator[str, None, None]:
+    """
+    Point d'entrée principal pour exécuter un Crew.
+    
+    Yields
+    ------
+    str
+        Chunks JSON de type 'log', 'result', ou 'error'.
+    """
+    service = CrewExecutionService()
+    config_path = service._resolve_config_path(crew_name)
 
-        root_logger = logging.getLogger()
-        root_logger.addHandler(queue_handler)
-        root_logger.addHandler(file_handler)
+    if not config_path.exists():
+        yield service._make_chunk("error", f"Crew '{crew_name}' introuvable.")
+        return
 
-        # Construire le Crew
+    # Configuration initiale
+    service._configure_env_variables()
+    setup_litellm_interceptor()
+    
+    yield service._make_chunk("log", f"Chargement du Crew : {crew_name}...")
+
+    try:
+        # Chargement de la configuration
+        crew_settings = get_crew_settings_from_yaml(config_path)
+        effective_rpm = max_rpm or crew_settings.get("max_rpm", 15)
+
+        yield service._make_chunk("log", f"Paramètres : process={crew_settings['process']}, memory={crew_settings['memory']}, max_rpm={effective_rpm}")
+
+        # Setup Logging
+        log_queue: queue.Queue[str] = queue.Queue()
+        service._setup_logging(log_queue)
+
+        # Instanciation
+        agents, tasks = service._create_agents_and_tasks(
+            config_path, 
+            llm_override, 
+            log_queue
+        )
+
+        # Création du Crew
         crew = Crew(
             agents=agents,
             tasks=tasks,
-            process=crew_settings["process"],
-            verbose=True,
-            memory=crew_settings["memory"],
+            process=crew_settings.get("process", "sequential"),
+            memory=crew_settings.get("memory", False),
+            cache=crew_settings.get("cache", True),
             max_rpm=effective_rpm,
-            embedder={
-                "provider": "sentence-transformer",
-                "config": {
-                    "model": "all-MiniLM-L6-v2"
-                }
-            },
+            verbose=True,
         )
 
-        yield _make_chunk("log", "🚀 Lancement de l'orchestration...")
-
-        # Lancer le kickoff dans un thread séparé pour pouvoir streamer les logs
-        result_container: dict[str, Any] = {}
-
-        def _kickoff():
-            import time
-            import re
-            
-            max_retries = 3
-            retries = 0
-            
-            thread_queues[threading.get_ident()] = log_queue
-            try:
-                # Prepare inputs dictionary
-                effective_inputs: dict[str, Any] = {}
-                if inputs and isinstance(inputs, dict):
-                    effective_inputs.update(inputs)
-                    if "message" not in effective_inputs and message:
-                        effective_inputs["message"] = message
-                else:
-                    effective_inputs = {
-                        "message": message,
-                        "user_request": message,
-                        "topic": message,
-                        "user_prompt": message
-                    }
-                    
-                if "project_path" not in effective_inputs:
-                    try:
-                        from app.tools.custom_tools import _get_project_root
-                        effective_inputs["project_path"] = _get_project_root()
-                    except Exception:
-                        pass
-                
-                # --- INJECTION AUTO DU CONTEXTE DES CREWS ---
-                try:
-                    from app.core.crew_manager import get_all_crews, get_crew, get_available_models
-                    crews_summary = []
-                    for c_name in get_all_crews():
-                        c_data = get_crew(c_name)
-                        desc = c_data.get("description", "Aucune description fournie.")
-                        
-                        tasks_info = []
-                        for t in c_data.get("tasks", []):
-                            t_desc = t.get("description", "").replace("\n", " ")
-                            t_out = t.get("expected_output", "").replace("\n", " ")
-                            tasks_info.append(f"  - But: {t_desc}\n    Output: {t_out}")
-                        
-                        tasks_str = "\n".join(tasks_info)
-                        crews_summary.append(f"### Crew: {c_name}\nDescription: {desc}\nTâches:\n{tasks_str}")
-                    
-                    effective_inputs["available_crews_context"] = "\n\n".join(crews_summary)
-
-                    # Injection du contexte des LLMs (seulement ceux de l'API custom ILAAS)
-                    llms = [m for m in get_available_models() if m.startswith("openai/")]
-                    effective_inputs["available_llms_context"] = ", ".join(llms) if llms else "Aucun modèle trouvé."
-                except Exception as e:
-                    crewai_logger.error(f"Erreur lors de l'injection du contexte des crews/LLMs: {e}")
-                # --------------------------------------------
-                
-                while retries <= max_retries:
-                    try:
-                        result_container["result"] = crew.kickoff(inputs=effective_inputs)
-                        if "error" in result_container:
-                            del result_container["error"]
-                        break
-                    except Exception as exc:
-                        error_str = str(exc)
-                        if "429" in error_str or "Quota exceeded" in error_str or "Rate Limit" in error_str or "RESOURCE_EXHAUSTED" in error_str:
-                            retries += 1
-                            if retries > max_retries:
-                                result_container["error"] = Exception(f"Nombre maximal de tentatives atteint (429). {error_str}")
-                                break
-                            
-                            delay = 60
-                            match = re.search(r"retry in (\d+(?:\.\d+)?)s", error_str)
-                            if match:
-                                delay = int(float(match.group(1))) + 2
-                                
-                            # Log pour affichage dans l'interface UI (SSE)
-                            crewai_logger.info(f"⚠️ Limite d'API atteinte (429). Pause automatique de {delay} secondes avant tentative {retries}/{max_retries}...")
-                            time.sleep(delay)
-                        else:
-                            result_container["error"] = exc
-                            break
-            finally:
-                thread_queues.pop(threading.get_ident(), None)
-
-        thread = threading.Thread(target=_kickoff, daemon=True)
-        thread.start()
-
-        # Streamer les logs pendant que le thread tourne
-        def _process_queue():
-            while not log_queue.empty():
-                try:
-                    msg = log_queue.get_nowait()
-                    if not msg.strip(): continue
-                    try:
-                        data = json.loads(msg)
-                        if isinstance(data, dict) and "type" in data:
-                            if data["type"] == "step":
-                                yield _make_chunk("log", f"🧠 [Réflexion] {data.get('log', '')}", stepStatus=data.get("status"), stepKey="agent_step")
-                            elif data["type"] == "metrics":
-                                yield _make_chunk("log", f"📊 [Metrics] Tokens: {data.get('tokens')} | Cost: ${data.get('cost')}", stepStatus="running", tokens=data.get("tokens"), cost=data.get("cost"), stepKey="agent_step")
-                        else:
-                            yield _make_chunk("log", msg)
-                    except json.JSONDecodeError:
-                        yield _make_chunk("log", msg)
-                except queue.Empty:
-                    break
-
-        while thread.is_alive():
-            yield from _process_queue()
-            time.sleep(0.1)
-
-        # Vider la queue restante
-        yield from _process_queue()
-
-        # Nettoyer les handlers
-        crewai_logger.removeHandler(queue_handler)
-        crewai_logger.removeHandler(file_handler)
-        root_logger.removeHandler(queue_handler)
-        root_logger.removeHandler(file_handler)
-        file_handler.close()
-
-        # Vérifier le résultat
-        if "error" in result_container:
-            error = result_container["error"]
-            error_str = str(error)
-
-            if "429" in error_str or "Rate Limit" in error_str or "Quota exceeded" in error_str:
-                from app.core.crew_manager import get_available_models
-                yield _make_chunk(
-                    "error",
-                    "Quota de l'API atteint (Rate Limit 429). Choisissez un autre modèle.",
-                    code=429,
-                    available_models=get_available_models(),
-                )
-            else:
-                yield _make_chunk("error", f"Erreur lors de l'exécution : {error_str}")
-        else:
-            result = result_container.get("result", "")
-            yield _make_chunk("result", str(result))
+        # Exécution et Streaming
+        yield from service._execute_crew_and_stream(crew, log_queue)
 
     except Exception as e:
-        yield _make_chunk("error", f"Erreur fatale : {str(e)}")
+        logging.error(f"Failed to run crew '{crew_name}': {e}", exc_info=True)
+        yield service._make_chunk("error", f"Erreur critique lors de l'exécution du Crew : {str(e)}")

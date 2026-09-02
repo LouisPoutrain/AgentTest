@@ -1,0 +1,22 @@
+{
+  "name": "agenttest-desktop",
+  "version": "0.1.0",
+  "main": "main.js",
+  "description": "Desktop Application for AgentTest",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^32.3.3"
+  },
+  "dependencies": {
+    "@electron/get": "^5.1.0",
+    "electron-serve": "^3.0.1",
+    "extract-zip": "^2.0.1",
+    "serve": "^14.2.6",
+    "tree-kill": "^1.2.2"
+  },
+  "allowScripts": {
+    "electron@32.3.3": true
+  }
+}

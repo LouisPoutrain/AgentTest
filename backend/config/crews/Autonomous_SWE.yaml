@@ -5,7 +5,7 @@ description: >
     équipes (crews) à la volée s'il en ressent le besoin pour accomplir sa mission.
 
 settings:
-    process: sequential
+    process: hierarchical
     memory: true
     max_rpm: 30
 

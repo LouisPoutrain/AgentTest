@@ -3,9 +3,12 @@ Outil CrewAI pour l'exécution de commandes terminal.
 """
 
 import subprocess
+from pathlib import Path
 from typing import Optional
 
 from crewai.tools import BaseTool
+
+PROJECT_ROOT = Path(__file__).resolve().parents[4]
 
 
 class TerminalRunnerTool(BaseTool):
@@ -43,6 +46,7 @@ class TerminalRunnerTool(BaseTool):
                 shell=True,
                 capture_output=True,
                 text=True,
+                cwd=str(PROJECT_ROOT),
                 timeout=300  # Timeout de 5 minutes
             )
             

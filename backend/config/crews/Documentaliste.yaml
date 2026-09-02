@@ -1,0 +1,69 @@
+crew_settings:
+  process: Séquentiel
+  memory: true
+  max_rpm: 10
+agents:
+- name: Analyseur_Diff
+  role: Expert en Analyse de Changements
+  goal: Identifier précisément ce qui a changé dans le code pour mettre à jour la documentation.
+  backstory: >
+    Tu sais lire les diffs git et les modifications de fichiers. Tu distingues les changements
+    de signature de fonction, les nouvelles fonctionnalités et les corrections de bugs.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - read_file
+  - list_directory
+  verbose: true
+  allow_delegation: false
+
+- name: Redacteur_Technique
+  role: Spécialiste en Documentation Logicielle
+  goal: Rédiger des guides, des README et des docs API clairs, concis et toujours à jour.
+  backstory: >
+    Tu transformes du code complexe en explications simples. Tu maîtrises le Markdown et
+    les standards de documentation technique.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - read_file
+  - write_file
+  verbose: true
+  allow_delegation: false
+
+- name: Verificateur_Doc
+  role: Auditeur de Cohérence Documentaire
+  goal: S'assurer que la documentation reflète exactement la réalité du code source.
+  backstory: >
+    Tu es intraitable sur la précision. Tu compares la doc générée avec le code réel pour
+    détecter toute divergence ou information obsolète.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - read_file
+  verbose: true
+  allow_delegation: false
+
+tasks:
+- description: >
+    Mettre à jour la documentation pour les changements suivants : "{message}".
+
+    1. Analyse les modifications de code sources.
+    2. Liste les fonctions, classes ou endpoints API qui ont été modifiés, ajoutés ou supprimés.
+  agent: Analyseur_Diff
+  expected_output: Un résumé technique des changements impactant la documentation.
+
+- description: >
+    À partir de l'analyse des changements :
+
+    1. Mets à jour les fichiers de documentation (ex: README.md, docs/api.md).
+    2. Utilise 'write_file' pour enregistrer les modifications.
+    3. Assure-toi que le ton est professionnel et accessible.
+  agent: Redacteur_Technique
+  expected_output: La confirmation de la mise à jour des fichiers de documentation.
+
+- description: >
+    Vérification finale :
+
+    1. Lis la documentation mise à jour et le code source correspondant.
+    2. Valide que chaque instruction de la doc est correcte et testable.
+    3. Signale toute incohérence.
+  agent: Verificateur_Doc
+  expected_output: Un rapport de validation confirmant la synchronisation Doc <-> Code.

@@ -1,0 +1,161 @@
+crew_settings:
+  process: Séquentiel
+  memory: false
+  max_rpm: 15
+agents:
+- name: EducationalResearcher
+  role: Expert en Recherche Académique et Pédagogie
+  goal: Identifier et structurer les ressources éducatives les plus pertinentes sur
+    un sujet donné
+  backstory: Vous êtes un pédagogue expérimenté avec une expertise en didactique des
+    technologies IA. Votre mission est de transformer des papers complexes et des
+    dépôts GitHub techniques en contenu éducatif accessible et progressif pour différents
+    niveaux de compétence.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - web_search
+  - read_file
+  - write_file
+  - list_directory
+- name: ContentArchitect
+  role: Architecte de Contenu Éducatif
+  goal: Concevoir une structure pédagogique claire et progressive pour l'apprentissage
+    d'une technologie
+  backstory: Vous avez une expertise en conception de parcours d'apprentissage. Vous
+    savez comment décomposer des concepts complexes en étapes progressives, du niveau
+    débutant à avancé, en passant par la théorie et la pratique.
+  llm: openai/mistral-small-4-119b
+  tools:
+  - research_educational_resources
+  - write_file
+- name: InteractiveDesigner
+  role: Designer d'Expériences Éducatives Interactives
+  goal: Créer des pages HTML éducatives visuellement attrayantes et interactives
+  backstory: Vous êtes un expert en design pédagogique numérique. Vous savez créer
+    des interfaces qui facilitent l'apprentissage grâce à des animations, des progressions
+    visuelles et des éléments interactifs.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - generate_educational_html
+  - write_file
+  verbose: true
+  allow_delegation: false
+- name: TechnicalWriter
+  role: Rédacteur Technique et Pédagogique
+  goal: Générer un document Markdown éducatif complet et professionnel
+  backstory: Vous avez une expertise en rédaction technique et en vulgarisation scientifique.
+    Vous savez transformer des données techniques en contenu clair, structuré et prêt
+    pour l'apprentissage.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - generate_educational_markdown
+  - write_file
+  verbose: true
+  allow_delegation: false
+tasks:
+- description: 'PHASE 1 : RECHERCHE DES RESSOURCES ÉDUCATIVES
+
+    En tant qu''expert en recherche académique, votre mission est de trouver les papers
+    de recherche les plus pertinents, les dépôts GitHub de référence, et les ressources
+    pédagogiques (tutoriels, cours) sur le sujet : {topic}.
+
+    **Étapes à suivre :** 0. Utilisez l''outil list_directory pour explorer le dossier
+    {project_path}. Utilisez read_file pour lire les résultats du StateOfTheArtCrew (comme
+    findings.json ou state_of_the_art_report.md) afin de vous baser sur ses découvertes.
+    1. Utilisez l''outil web_search pour trouver des papers académiques récents (2023-2025)
+    complémentaires 2. Utilisez l''outil web_search pour trouver des dépôts GitHub
+    pertinents avec implémentations de référence 3. Utilisez l''outil web_search pour
+    trouver des tutoriels et cours en ligne 4. Structurez les résultats dans un format
+    éducatif progressif
+
+    **Critères de qualité :** - Privilégiez les papers récents (2023-2025) avec des
+    benchmarks - Incluez des dépôts GitHub avec des implémentations de référence (1000+
+    étoiles) - Ajoutez des tutoriels et cours pour différents niveaux - Vérifiez que
+    les URLs sont accessibles et les ressources téléchargeables
+
+    **Sortie attendue :**
+    - Sauvegardez un fichier {project_path}/findings_educational.json contenant toutes les sources identifiées
+    - Une structure organisée par niveau de difficulté (débutant, intermédiaire, avancé)
+
+    '
+  agent: EducationalResearcher
+  expected_output: >
+    Un fichier sauvegardé sous le chemin {project_path}/findings_educational.json structuré avec :
+    - Papers de recherche (titre, auteurs, année, citations, URL, description)
+    - Dépôts GitHub (nom, propriétaire, étoiles, forks, URL, description)
+    - Tutoriels et cours (titre, type, niveau, URL, description)
+    - Références complémentaires (frameworks, datasets, outils)
+    - Métadonnées (sujet, date, version)
+- description: 'PHASE 2 : CONCEPTION DE LA STRUCTURE ÉDUCATIVE
+
+    En tant qu''architecte de contenu éducatif, votre mission est de transformer les
+    ressources trouvées en un parcours d''apprentissage progressif et complet.
+
+    **Étapes à suivre :**
+    1. Lisez le fichier {project_path}/findings_educational.json
+    2. Créez une architecture de cours avec :
+       - Introduction (context, prérequis)
+       - Niveau Fondamental (concepts clés)
+       - Niveau Avancé (théorie poussée)
+       - Niveau Pratique (code, projets)
+    3. Rédigez le contenu éducatif pour chaque section en simplifiant les concepts complexes
+    4. Intégrez des analogies et des exemples clairs
+    5. Sauvegardez le résultat dans le fichier {project_path}/educational_structure.json
+
+    **Critères de qualité :**
+    - Progression logique et didactique
+    - Concepts complexes vulgarisés sans perdre en précision technique
+    - Exemples concrets et applicables
+    - Métadonnées complètes
+
+    **Sortie attendue :**
+    - Sauvegardez un fichier {project_path}/educational_structure.json contenant la structure pédagogique complète
+    - Tous les chapitres et sections définis avec contenu éducatif
+
+    '
+  agent: ContentArchitect
+  expected_output: >
+    Un fichier sauvegardé sous le chemin {project_path}/educational_structure.json contenant :
+    - Métadonnées du cours
+    - Sections structurées (Intro, Fondamentaux, Avancé, Pratique)
+    - Contenu textuel rédigé pour chaque section
+    - Ressources associées à chaque module
+- description: "PHASE 3 : GÉNÉRATION DE LA PAGE HTML INTERACTIVE\nEn tant que designer\
+    \ d'expériences éducatives interactives, votre mission est de créer une page web\
+    \ interactive qui rend l'apprentissage visuel et engageant.\n**Étapes à suivre\
+    \ :** 1. Lisez le fichier {project_path}/educational_structure.json 2. Utilisez l'outil generate_educational_html\
+    \ pour créer la page HTML 3. Intégrez des éléments interactifs :\n   - Barre de\
+    \ progression de l'apprentissage\n   - Cartes cliquables pour chaque chapitre\n\
+    \   - Animations au survol\n   - Design moderne avec gradient violet\n   - Responsive\
+    \ (mobile et desktop)\n4. Ajoutez une section \"Comment utiliser\" avec instructions\
+    \ 5. Sauvegardez la page HTML en utilisant l'outil generate_educational_html dans le dossier {project_path}\n**Critères de qualité :** - Design moderne et professionnel - Interface intuitive et éducative - Contenu\
+    \ clair et bien structuré - Responsive sur tous les appareils - Prêt pour le partage\
+    \ et la distribution\n**Sortie attendue :** - Une page HTML interactive : state_of_the_art_[sujet].html\
+    \ - Design moderne avec animations et gradient - Graphiques et visualisations\
+    \ si pertinent\n"
+  agent: InteractiveDesigner
+  expected_output: 'Une page HTML interactive générée avec succès : - Fichier : state_of_the_art_[sujet]_educational.html
+    - Design moderne avec gradient violet (#667eea à #764ba2) - Animations CSS et
+    JavaScript - Structure éducative claire avec 5 sections - Contenu interactif et
+    engageant - Responsive sur mobile et desktop
+
+    '
+- description: "PHASE 4 : GÉNÉRATION DU DOCUMENT MARKDOWN ÉDUCATIF\nEn tant que rédacteur\
+    \ technique, votre mission est de transformer la structure éducative en un document\
+    \ Markdown complet et professionnel.\n**Étapes à suivre :** 1. Lisez le fichier\
+    \ {project_path}/educational_structure.json 2. Utilisez l'outil generate_educational_markdown\
+    \ pour créer le document Markdown. Vous devez impérativement passer {project_path} comme paramètre output_dir de l'outil. 3. Structurez le document avec :\n   - Titre\
+    \ principal avec métadonnées\n   - Sections Introduction, Fondamentaux, Avancé,\
+    \ Pratique, Théorie\n   - Références complètes\n   - Format prêt pour l'apprentissage\
+    \ et le partage\n4. Utilisez une typographie claire et professionnelle 5. Ajoutez\
+    \ une table des matières et des liens cliquables\n**Critères de qualité :** -\
+    \ Document Markdown professionnel et lisible - Structure claire avec numérotation\
+    \ des sections - Contenu complet et bien formaté - Typographie lisible et moderne\
+    \ - Prêt pour l'apprentissage et le partage\n**Sortie attendue :** - Un fichier\
+    \ Markdown éducatif : state_of_the_art_[sujet]_educational.md - Contenu complet\
+    \ et professionnel - Prêt pour l'apprentissage et la distribution\n"
+  agent: TechnicalWriter
+  expected_output: 'Un fichier Markdown éducatif généré avec succès : - Fichier :
+    state_of_the_art_[sujet]_educational.md - Structure professionnelle avec titre,
+    sections et références - Typographie moderne et lisible - Contenu complet et prêt
+    pour l''apprentissage - Format Markdown standard'

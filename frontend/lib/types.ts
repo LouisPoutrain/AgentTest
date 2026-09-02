@@ -14,6 +14,7 @@ export interface Conversation {
   messages: ChatMessage[];
   createdAt: string;
   title: string;
+  folderContext?: string;
 }
 
 export interface CrewSettings {

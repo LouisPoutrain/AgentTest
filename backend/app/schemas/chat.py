@@ -10,7 +10,8 @@ from pydantic import BaseModel, Field
 class ChatRequest(BaseModel):
     """Corps de la requête POST /api/chat."""
 
-    crew_name: str = Field(..., max_length=100, description="Nom du Crew à exécuter")
+    session_id: str | None = Field(default=None, description="ID de la session (si None, une nouvelle sera créée)")
+    crew_name: str | None = Field(default=None, max_length=100, description="Nom du Crew à exécuter (si None, le routeur décide)")
     message: str = Field(default="", max_length=10000, description="Message de l'utilisateur pour le Crew (si prompt unique)")
     inputs: dict[str, Any] | None = Field(default=None, description="Dictionnaire des variables/paramètres dynamiques pour le Crew")
     max_rpm: int = Field(default=15, ge=1, le=100, description="Limite de requêtes par minute")

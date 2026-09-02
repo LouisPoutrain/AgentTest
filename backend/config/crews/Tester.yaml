@@ -1,8 +1,7 @@
 crew_settings:
-  process: Séquentiel
-  memory: false
-  max_rpm: 10
-
+  process: hierarchical
+  memory: true
+  max_rpm: 15
 agents:
 - name: Cartographe_QA
   role: Architecte QA & Explorateur de Codebase
@@ -33,6 +32,7 @@ agents:
   - read_file
   - write_file
   - run_test_command
+  - execute_crew
   verbose: true
   allow_delegation: false
   max_iter: 70
@@ -44,37 +44,32 @@ tasks:
     1. Utilise 'list_directory' pour explorer la structure du projet à "{message}".
     2. Identifie les sous-dossiers clés (ex: src/app/api, components, lib, stores, prisma).
     3. Dresse la liste exacte des composants, fonctions utilitaires, stores et routes API prioritaires à tester.
+    4. Définit la stratégie de test (unitaires vs intégration) et les outils à utiliser.
   agent: Cartographe_QA
   expected_output: >
-    Un plan de couverture de tests listant les fichiers sources critiques et les suites de tests à implémenter.
+    Un plan de couverture de tests détaillé listant les fichiers sources critiques et la stratégie de test.
 
 - description: >
     À partir de la cartographie de test établie :
 
-    1. ÉTAPE 1 - CRÉATION DES FICHIERS DE TESTS :
-       - Utilise 'read_file' pour lire les fichiers sources critiques dans "{message}".
-       - Utilise 'write_file' pour générer la configuration de test dans "{message}" :
-         * vitest.config.ts (ou configuration adaptée à la stack)
-         * tests/setupTests.ts (mocks globaux de fetch, localStorage, etc.)
-       - Utilise 'write_file' pour générer les fichiers de tests dans "{message}/tests/" :
-         * Tests unitaires des utilitaires et clients API
-         * Tests d'intégration des endpoints d'API (avec mocks Prisma / LLM)
-         * Tests de composants UI et de stores (Zustand / Redux)
-         * Tests des cas limites (edge-cases, inputs invalides, erreurs HTTP)
-
-    2. ÉTAPE 2 - EXÉCUTION RÉELLE DES TESTS SUR LA MACHINE :
-       - Utilise 'run_test_command' avec :
-         * project_path: "{message}"
-         * command: "npx vitest run --reporter=verbose" (ou "npm test" ou "pytest" selon la stack)
-       - Si des erreurs de compilation ou de types surviennent, exécute aussi "npx tsc --noEmit" via 'run_test_command'.
-
-    3. ÉTAPE 3 - ANALYSE DU BILAN RÉEL & RÉDACTION DE TEST_REPORT.md :
-       - Analyse méticuleusement les résultats de 'run_test_command' (tests réussis, tests en échec, logs d'erreurs, stack traces).
-       - Utilise 'write_file' pour enregistrer le rapport dans "{message}/TEST_REPORT.md" comprenant :
-         * Bilan Global d'Exécution : Nombre de tests réussis vs échoués (avec le code de sortie exact).
-         * Détail des tests en échec (nom du test, fichier, cause exacte de l'échec et trace d'erreur).
-         * Diagnostics & Bugs réels détectés dans le code applicatif.
-         * Recommandations précises pour le crew 'Fixer' afin de réparer les problèmes constatés.
+    1. Utilise 'read_file' pour lire les fichiers sources critiques dans "{message}".
+    2. Utilise 'write_file' pour générer la configuration de test (ex: vitest.config.ts, pytest.ini) et les fichiers de tests dans "{message}/tests/".
+    3. Assure-toi que les tests couvrent les cas nominaux et les edge-cases.
   agent: Ingenieur_Tests_Automatises
   expected_output: >
-    Le rapport complet '{message}/TEST_REPORT.md' basé sur l'exécution réelle des tests, et la confirmation de l'outil 'write_file'.
+    Les fichiers de configuration et les suites de tests générés avec succès dans le projet.
+
+- description: >
+    Exécution et analyse des tests :
+
+    1. Utilise 'run_test_command' pour lancer les tests sur la machine.
+    2. Analyse méticuleusement les résultats (logs, stack traces).
+    3. BOUCLE DE RÉPARATION (Self-healing) :
+       - Si des tests échouent, tu DOIS utiliser l'outil 'execute_crew' pour invoquer le crew 'Fixer'.
+       - Passe les logs d'échec comme input au crew 'Fixer'.
+       - Une fois que le 'Fixer' a terminé, relance les tests via 'run_test_command'.
+       - Répète ce processus jusqu'à ce que les tests passent ou que tu aies atteint 3 tentatives.
+    4. Rédige le rapport final dans "{message}/TEST_REPORT.md" incluant le bilan global et les diagnostics.
+  agent: Ingenieur_Tests_Automatises
+  expected_output: >
+    Le rapport complet '{message}/TEST_REPORT.md' et la confirmation que les tests sont soit passés, soit documentés après tentatives de correction.

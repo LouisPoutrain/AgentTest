@@ -13,3 +13,5 @@ backend/logs/
 .aider*
 .DS_Store
 analyse_temp/
+*.db
+desktop/node_modules/
