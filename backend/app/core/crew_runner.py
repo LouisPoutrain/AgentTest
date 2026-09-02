@@ -244,7 +244,7 @@ class CrewExecutionService:
         )
         tasks = create_tasks_from_yaml(
             config_path,
-            agents=agents,
+            agents_list=agents,
         )
         return agents, tasks
 

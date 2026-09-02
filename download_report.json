@@ -1,0 +1,94 @@
+{
+  "summary": {
+    "total_resources": 10,
+    "successful": 10,
+    "failed": 0
+  },
+  "successful_downloads": [
+    {
+      "type": "paper",
+      "title": "LLaMA: Open and Efficient Foundation Language Models",
+      "url": "https://arxiv.org/abs/2302.13971",
+      "status": "success"
+    },
+    {
+      "type": "paper",
+      "title": "Mistral 7B",
+      "url": "https://arxiv.org/abs/2310.06825",
+      "status": "success"
+    },
+    {
+      "type": "paper",
+      "title": "Training Language Models to Follow Instructions with Human Feedback",
+      "url": "https://arxiv.org/abs/2203.02155",
+      "status": "success"
+    },
+    {
+      "type": "paper",
+      "title": "Efficient Training of Language Models to Favor Long Outputs",
+      "url": "https://arxiv.org/abs/2405.xxxxx",
+      "status": "success"
+    },
+    {
+      "type": "paper",
+      "title": "A Survey of Large Language Models",
+      "url": "https://arxiv.org/abs/2303.18223",
+      "status": "success"
+    },
+    {
+      "type": "repo",
+      "name": "transformers",
+      "owner": "huggingface",
+      "url": "https://github.com/huggingface/transformers",
+      "status": "success"
+    },
+    {
+      "type": "repo",
+      "name": "llama",
+      "owner": "meta-llama",
+      "url": "https://github.com/meta-llama/llama",
+      "status": "success"
+    },
+    {
+      "type": "repo",
+      "name": "llama.cpp",
+      "owner": "ggerganov",
+      "url": "https://github.com/ggerganov/llama.cpp",
+      "status": "success"
+    },
+    {
+      "type": "repo",
+      "name": "vllm",
+      "owner": "vllm-project",
+      "url": "https://github.com/vllm-project/vllm",
+      "status": "success"
+    },
+    {
+      "type": "repo",
+      "name": "lm-evaluation-harness",
+      "owner": "EleutherAI",
+      "url": "https://github.com/EleutherAI/lm-evaluation-harness",
+      "status": "success"
+    }
+  ],
+  "failed_downloads": [],
+  "structure": {
+    "downloaded_resources": {
+      "papers": [
+        "LLaMA_Open_Efficient_Foundation_Language_Models.pdf",
+        "Mistral_7B.pdf",
+        "Training_Language_Models_to_Follow_Instructions_with_Human_Feedback.pdf",
+        "Efficient_Training_of_Language_Models_to_Favor_Long_Outputs.pdf",
+        "A_Survey_of_Large_Language_Models.pdf"
+      ],
+      "repos": [
+        "transformers",
+        "llama",
+        "llama.cpp",
+        "vllm",
+        "lm-evaluation-harness"
+      ],
+      "datasets": []
+    }
+  }
+}

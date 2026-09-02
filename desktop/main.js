@@ -38,7 +38,7 @@ async function createWindow() {
     height: 800,
     titleBarStyle: 'hiddenInset',
     title: 'Agent Zouglou',
-    icon: path.join(__dirname, 'icon.jpg'),
+    icon: path.join(__dirname, 'icon.png'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true
@@ -62,7 +62,7 @@ async function createWindow() {
 
 app.whenReady().then(async () => {
   if (process.platform === 'darwin') {
-    app.dock.setIcon(path.join(__dirname, 'icon.jpg'));
+    app.dock.setIcon(path.join(__dirname, 'icon.png'));
   }
 
   startBackend();

@@ -1,9 +1,9 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "diagram_type": "architecture",
   "meta": {
-    "title": "AgentTest Architecture",
-    "subtitle": "CrewAI Orchestration Platform with FastAPI & Next.js",
+    "title": "AgentTest Architecture Moderne",
+    "subtitle": "CrewAI Orchestration Platform avec FastAPI, Next.js 14+, PostgreSQL, Celery/Redis et Observabilité",
     "output": "./architecture_diagram.html"
   },
   "components": [
@@ -11,7 +11,7 @@
       "id": "frontend",
       "type": "frontend",
       "label": "Frontend Client",
-      "sublabel": "Next.js 16 / React 19",
+      "sublabel": "Next.js 14+ App Router / React 19 / TanStack Query",
       "pos": [80, 380],
       "size": [140, 80],
       "tag": "UI Layer"
@@ -20,17 +20,35 @@
       "id": "api",
       "type": "backend",
       "label": "API Server",
-      "sublabel": "FastAPI / Python",
+      "sublabel": "FastAPI 0.111+ / JWT Auth / OpenTelemetry",
       "pos": [310, 380],
       "size": [140, 80],
       "tag": "REST + SSE"
     },
     {
+      "id": "celery",
+      "type": "backend",
+      "label": "Celery Workers",
+      "sublabel": "Async Task Queue / Redis Broker",
+      "pos": [540, 280],
+      "size": [140, 80],
+      "tag": "Event-Driven"
+    },
+    {
+      "id": "postgresql",
+      "type": "database",
+      "label": "PostgreSQL",
+      "sublabel": "ACID Transactions / PGVector / Users & Sessions",
+      "pos": [540, 180],
+      "size": [140, 80],
+      "tag": "Relational DB"
+    },
+    {
       "id": "crew_runner",
       "type": "backend",
       "label": "Crew Runner",
-      "sublabel": "Core Logic",
-      "pos": [540, 380],
+      "sublabel": "Core Logic / YAML Config Loader",
+      "pos": [770, 380],
       "size": [140, 80],
       "tag": "Orchestrator"
     },
@@ -38,8 +56,8 @@
       "id": "crewai",
       "type": "backend",
       "label": "CrewAI",
-      "sublabel": "Agent Framework",
-      "pos": [770, 380],
+      "sublabel": "Agent Framework / Async Agents",
+      "pos": [1000, 380],
       "size": [140, 80],
       "tag": "Agent Loop"
     },
@@ -47,8 +65,8 @@
       "id": "litellm",
       "type": "backend",
       "label": "LiteLLM",
-      "sublabel": "LLM Abstraction",
-      "pos": [1000, 380],
+      "sublabel": "LLM Abstraction / Security Wrapper",
+      "pos": [1230, 380],
       "size": [140, 80],
       "tag": "Multi-Provider"
     },
@@ -56,58 +74,72 @@
       "id": "llms",
       "type": "cloud",
       "label": "External LLMs",
-      "sublabel": "OpenAI / Gemini / Ollama",
-      "pos": [1230, 380],
+      "sublabel": "OpenAI / Gemini / Ollama / Anthropic",
+      "pos": [1460, 380],
       "size": [140, 80],
       "tag": "External API"
     },
     {
-      "id": "docker",
-      "type": "cloud",
-      "label": "Docker Sandbox",
-      "sublabel": "Isolated Execution",
+      "id": "prometheus",
+      "type": "monitoring",
+      "label": "Prometheus",
+      "sublabel": "Metrics Collection / Alerting",
       "pos": [770, 180],
       "size": [140, 80],
-      "tag": "Security"
+      "tag": "Observability"
     },
     {
-      "id": "yaml",
-      "type": "security",
-      "label": "YAML Config",
-      "sublabel": "Crew Definitions",
-      "pos": [540, 180],
+      "id": "grafana",
+      "type": "monitoring",
+      "label": "Grafana",
+      "sublabel": "Dashboards / Visualization",
+      "pos": [1000, 180],
       "size": [140, 80],
-      "tag": "Persistence"
+      "tag": "Observability"
     },
     {
-      "id": "storage",
-      "type": "frontend",
-      "label": "Local Storage",
-      "sublabel": "Browser State",
-      "pos": [80, 180],
+      "id": "opentelemetry",
+      "type": "monitoring",
+      "label": "OpenTelemetry",
+      "sublabel": "Tracing / Distributed Tracing",
+      "pos": [1230, 180],
       "size": [140, 80],
-      "tag": "Client DB"
+      "tag": "Observability"
     }
   ],
   "connections": [
     {
       "from": "frontend",
       "to": "api",
-      "label": "HTTP / SSE",
+      "label": "HTTP / SSE / JWT",
       "variant": "emphasis",
       "labelDy": 20
     },
     {
       "from": "api",
+      "to": "celery",
+      "label": "Publish Task",
+      "variant": "emphasis",
+      "labelDy": 20
+    },
+    {
+      "from": "celery",
       "to": "crew_runner",
-      "label": "Run Crew",
+      "label": "Execute Crew",
+      "variant": "emphasis",
+      "labelDy": 20
+    },
+    {
+      "from": "crew_runner",
+      "to": "postgresql",
+      "label": "CRUD Users & Sessions",
       "variant": "emphasis",
       "labelDy": 20
     },
     {
       "from": "crew_runner",
       "to": "crewai",
-      "label": "Kickoff",
+      "label": "Kickoff Agents",
       "variant": "emphasis",
       "labelDy": 20
     },
@@ -126,25 +158,49 @@
       "labelDy": 20
     },
     {
-      "from": "crew_runner",
-      "to": "docker",
-      "label": "Exec Code",
+      "from": "api",
+      "to": "prometheus",
+      "label": "Expose Metrics",
       "variant": "dashed",
       "fromSide": "top",
       "toSide": "bottom"
     },
     {
-      "from": "crew_runner",
-      "to": "yaml",
-      "label": "Load Config",
+      "from": "celery",
+      "to": "prometheus",
+      "label": "Track Tasks",
       "variant": "dashed",
       "fromSide": "top",
       "toSide": "bottom"
     },
     {
-      "from": "frontend",
-      "to": "storage",
-      "label": "Persist State",
+      "from": "postgresql",
+      "to": "prometheus",
+      "label": "DB Metrics",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "from": "prometheus",
+      "to": "grafana",
+      "label": "Visualize",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "from": "api",
+      "to": "opentelemetry",
+      "label": "Trace Requests",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "from": "opentelemetry",
+      "to": "grafana",
+      "label": "View Traces",
       "variant": "dashed",
       "fromSide": "top",
       "toSide": "bottom"
@@ -154,41 +210,69 @@
     {
       "kind": "region",
       "label": "Backend Server",
-      "wraps": ["api", "crew_runner", "crewai", "litellm", "yaml"]
+      "wraps": ["api", "celery", "postgresql", "crew_runner", "crewai", "litellm", "opentelemetry", "prometheus"]
     },
     {
       "kind": "region",
       "label": "Client Browser",
-      "wraps": ["frontend", "storage"]
+      "wraps": ["frontend"]
+    },
+    {
+      "kind": "region",
+      "label": "Observability Stack",
+      "wraps": ["prometheus", "grafana", "opentelemetry"]
     }
   ],
   "cards": [
     {
       "dot": "cyan",
-      "title": "Execution Flow",
+      "title": "Execution Flow Moderne",
       "items": [
-        "User sends message via Frontend",
-        "FastAPI routes to Crew Runner",
-        "CrewAI orchestrates agents",
-        "LiteLLM handles LLM calls"
+        "User envoie message via Frontend (Next.js 14+)",
+        "FastAPI 0.111+ route vers Crew Runner (JWT Auth)",
+        "Celery publie tâche dans Redis (asynchrone)",
+        "Worker consomme tâche et exécute CrewAI",
+        "LiteLLM gère les appels LLM (sécurisé)",
+        "Résultat stocké dans PostgreSQL (ACID)",
+        "Réponse retournée via SSE ou polling"
       ]
     },
     {
       "dot": "emerald",
-      "title": "Security & Isolation",
+      "title": "Sécurité & Isolation",
       "items": [
-        "Docker sandbox for code execution",
-        "YAML config validation",
-        "CORS protection on API"
+        "JWT/OAuth2 pour l'authentification",
+        "Validation stricte des entrées (Pydantic)",
+        "Liste blanche des modèles LLM autorisés",
+        "Wrapper sécurisé pour LiteLLM",
+        "PostgreSQL pour la persistance des utilisateurs",
+        "CORS configuré via ALLOWED_ORIGINS",
+        "Logs structurés avec rotation"
       ]
     },
     {
       "dot": "rose",
-      "title": "Data Persistence",
+      "title": "Observabilité Complète",
       "items": [
-        "Crew definitions in YAML files",
-        "Conversations in LocalStorage",
-        "No server-side database"
+        "OpenTelemetry pour le tracing distribué",
+        "Prometheus pour les métriques (latence, erreurs, coûts)",
+        "Grafana pour les dashboards",
+        "Alertes sur seuils de coûts LLM",
+        "Logs structurés avec niveaux (DEBUG, INFO, WARNING, ERROR)",
+        "Suivi des tokens par utilisateur",
+        "Détection proactive des problèmes"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Architecture Hybride",
+      "items": [
+        "PostgreSQL pour les données relationnelles (Users, Sessions)",
+        "PGVector pour la mémoire sémantique (RAG)",
+        "ChromaDB conservé pour la compatibilité",
+        "Transactions ACID pour la cohérence",
+        "Requêtes SQL complexes possibles",
+        "Sauvegarde fiable et scalable"
       ]
     }
   ]
