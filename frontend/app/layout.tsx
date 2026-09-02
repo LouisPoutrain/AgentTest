@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AgentTest - Interface",
+  title: "Agent Zouglou - Interface",
   description: "Orchestration d'agents IA en temps réel",
 };
 

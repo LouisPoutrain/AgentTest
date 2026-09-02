@@ -1,13 +1,24 @@
 {
-  "name": "agenttest-desktop",
+  "name": "agent-zouglou",
+  "productName": "Agent Zouglou",
   "version": "0.1.0",
   "main": "main.js",
-  "description": "Desktop Application for AgentTest",
+  "description": "Desktop Application for Agent Zouglou",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-builder -m"
+  },
+  "build": {
+    "appId": "com.louispoutrain.agentzouglou",
+    "productName": "Agent Zouglou",
+    "mac": {
+      "icon": "icon.png",
+      "target": "dir"
+    }
   },
   "devDependencies": {
-    "electron": "^32.3.3"
+    "electron": "^32.3.3",
+    "electron-builder": "^26.15.3"
   },
   "dependencies": {
     "@electron/get": "^5.1.0",

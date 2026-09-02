@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from "react";
-import { MessageBubble } from "./MessageBubble";
+import { ChatMessageComponent } from "./ChatMessage";
+import { AgentLog } from "./AgentLog";
 import { TypingIndicator } from "./TypingIndicator";
 import { ChatInput } from "./ChatInput";
 import { CrewLaunchPad } from "./CrewLaunchPad";
@@ -161,11 +162,22 @@ export function ChatWindow({
                     <p>Posez-moi une question ou ouvrez le panneau latéral pour lancer un Crew manuellement.</p>
                   </div>
                 )}
-                {messages.filter(m => m.content.trim() !== "").map((msg) => (
-                  <div key={msg.id} className={cn("animate-in fade-in-0 duration-300")}>
-                    <MessageBubble message={msg} />
-                  </div>
-                ))}
+                {messages.filter(m => m.content.trim() !== "").map((msg, index) => {
+                  const isLast = index === messages.length - 1;
+                  if (msg.type === "log") {
+                    return (
+                      <div key={msg.id} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <AgentLog content={msg.content} timestamp={msg.timestamp} />
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <div key={msg.id} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <ChatMessageComponent message={msg} isStreaming={isStreaming && isLast && msg.role !== "user"} />
+                    </div>
+                  );
+                })}
                 
                 {/* Inline Progress Bars */}
                 {activeId && (
