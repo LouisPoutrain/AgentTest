@@ -1,0 +1,70 @@
+crew_settings:
+  process: Séquentiel
+  memory: true
+  max_rpm: 10
+agents:
+- name: Designer_Scenario
+  role: Expert en Parcours Utilisateurs (UX/QA)
+  goal: Définir des scénarios de test de bout en bout (E2E) qui simulent le comportement réel d'un utilisateur.
+  backstory: >
+    Tu penses comme un utilisateur final. Tu identifies les flux critiques (Happy Path)
+    et les chemins d'erreur complexes pour garantir que l'application est robuste.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - web_search
+  verbose: true
+  allow_delegation: false
+
+- name: Executeur_Flux
+  role: Ingénieur d'Intégration et Automatisation
+  goal: Exécuter les scénarios définis en orchestrant des appels API ou en lançant des scripts de test E2E.
+  backstory: >
+    Tu maîtrises les outils d'automatisation (Playwright, Cypress, Postman/Newman).
+    Tu lances les flux et captures précisément où et pourquoi un scénario échoue.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - run_test_command
+  - execute_python_code
+  - read_file
+  verbose: true
+  allow_delegation: false
+
+- name: Agent_Validation_E2E
+  role: Analyste de Qualité Intégration
+  goal: Valider que le résultat final du flux correspond aux attentes métier définies.
+  backstory: >
+    Tu es le juge final. Tu analyses les logs d'exécution et les états de la base de données
+    pour confirmer que le scénario est réellement validé.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - read_file
+  - execute_python_code
+  verbose: true
+  allow_delegation: false
+
+tasks:
+- description: >
+    Définir les tests E2E pour la fonctionnalité suivante : "{message}".
+
+    1. Analyse la fonctionnalité et identifie les 3 flux utilisateurs les plus critiques.
+    2. Pour chaque flux, détaille les étapes : Input $\rightarrow$ Action $\rightarrow$ Résultat attendu.
+  agent: Designer_Scenario
+  expected_output: Un document de spécifications de tests E2E avec scénarios détaillés.
+
+- description: >
+    Exécuter les scénarios E2E :
+
+    1. Traduis les scénarios en scripts de test ou commandes d'exécution.
+    2. Utilise 'run_test_command' ou 'execute_python_code' pour lancer les flux.
+    3. Capture toutes les sorties console et les codes de retour.
+  agent: Executeur_Flux
+  expected_output: Les logs d'exécution bruts pour chaque scénario E2E.
+
+- description: >
+    Valider les résultats :
+
+    1. Analyse les logs d'exécution.
+    2. Vérifie si les résultats attendus sont atteints.
+    3. Rédige un rapport d'intégration final validant ou invalidant la fonctionnalité.
+  agent: Agent_Validation_E2E
+  expected_output: Un rapport de validation E2E confirmant la stabilité du flux.

@@ -2,7 +2,7 @@
 
 import type { CrewDetail, SSEChunk, AgentConfig, TaskConfig, CrewSettings } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 /* ── Health ── */
 
@@ -15,9 +15,18 @@ export async function checkHealth(): Promise<{ status: string; api_key_set: bool
 /* ── Crews CRUD ── */
 
 export async function listCrews(): Promise<string[]> {
-  const res = await fetch(`${API_BASE}/api/crews`);
-  if (!res.ok) throw new Error("Failed to list crews");
-  return res.json();
+  console.log("Fetching crews from:", `${API_BASE}/api/crews`);
+  try {
+    const res = await fetch(`${API_BASE}/api/crews`, { cache: "no-store" });
+    console.log("Crews response status:", res.status);
+    if (!res.ok) throw new Error("Failed to list crews: " + res.statusText);
+    const data = await res.json();
+    console.log("Fetched crews:", data.length);
+    return data;
+  } catch (err) {
+    console.error("Error in listCrews:", err);
+    throw err;
+  }
 }
 
 export async function getCrew(name: string): Promise<CrewDetail> {
@@ -211,7 +220,7 @@ export async function deleteTask(
 /* ── Models ── */
 
 export async function listModels(): Promise<string[]> {
-  const res = await fetch(`${API_BASE}/api/models`);
+  const res = await fetch(`${API_BASE}/api/models`, { cache: "no-store" });
   if (!res.ok) return ["gemini/gemini-2.5-flash", "gemini/gemini-1.5-pro"];
   return res.json();
 }
@@ -228,7 +237,7 @@ export async function listTools(): Promise<string[]> {
 
 export async function streamChat(
   crewName: string,
-  options: { message?: string; inputs?: Record<string, any>; max_rpm?: number; llm_override?: string | null },
+  options: { message?: string; inputs?: Record<string, any>; max_rpm?: number; llm_override?: string | null; session_id?: string },
   onChunk: (chunk: SSEChunk) => void,
   signal?: AbortSignal
 ): Promise<void> {
@@ -241,6 +250,7 @@ export async function streamChat(
       inputs: options.inputs || null,
       max_rpm: options.max_rpm || 15,
       llm_override: options.llm_override || null,
+      session_id: options.session_id,
     }),
     signal,
   });

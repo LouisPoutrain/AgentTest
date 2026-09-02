@@ -1,0 +1,41 @@
+{
+  "crews": {
+    "Autonomous_SWE": {
+      "description": "Méta-orchestrateur pour le développement logiciel de bout en bout. Idéal pour les nouvelles fonctionnalités, les refactorisations majeures et la gestion de projet technique.",
+      "keywords": ["feature", "implémenter", "créer", "développement", "architecture", "refactor", "projet"]
+    },
+    "Reviewer": {
+      "description": "Audit de code, recherche de vulnérabilités de sécurité et optimisation de la qualité.",
+      "keywords": ["audit", "sécurité", "review", "vulnérabilité", "optimisation", "critique"]
+    },
+    "Tester": {
+      "description": "Création et exécution de tests automatisés, détection de régressions et rapport de bugs.",
+      "keywords": ["test", "bug", "qa", "vérifier", "régression", "tester"]
+    },
+    "Project_Architect": {
+      "description": "Conception d'architecture technique, choix de stack et planification de nouveaux projets.",
+      "keywords": ["architecture", "plan", "stack", "concevoir", "structure", "design"]
+    },
+    "Refactorer": {
+      "description": "Amélioration de la qualité du code sans changer le comportement (Clean Code, SOLID).",
+      "keywords": ["nettoyer", "refactor", "simplifier", "dette technique", "clean code"]
+    },
+    "Documentaliste": {
+      "description": "Mise à jour de la documentation technique et synchronisation avec le code source.",
+      "keywords": ["doc", "documentation", "readme", "expliquer", "guide"]
+    },
+    "Integration_E2E": {
+      "description": "Tests de flux utilisateurs de bout en bout et validation d'intégration.",
+      "keywords": ["e2e", "intégration", "flux", "scénario", "utilisateur"]
+    },
+    "Security_Adversary": {
+      "description": "Pentesting et simulation d'attaques pour trouver des failles critiques.",
+      "keywords": ["hack", "attaque", "payload", "intrusion", "exploit", "vulnérabilité"]
+    }
+  },
+  "model_tiers": {
+    "fast": "openai/llama-3.1-8b",
+    "balanced": "openai/qwen-3.6-35b-instruct",
+    "expert": "openai/gpt-oss-120b"
+  }
+}

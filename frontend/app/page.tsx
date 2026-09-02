@@ -10,7 +10,8 @@ import {
   createConversation, 
   addMessageToConversation,
   updateLastAssistantMessage,
-  updateConversationCrew
+  updateConversationCrew,
+  updateConversationFolder
 } from "@/lib/store";
 import { listCrews, streamChat, getCrew, listModels } from "@/lib/api";
 import type { Conversation, SSEChunk, CrewDetail } from "@/lib/types";
@@ -48,7 +49,7 @@ export default function Home() {
   const activeConversation = conversations.find(c => c.id === activeId);
 
   useEffect(() => {
-    if (activeConversation?.crewName) {
+    if (activeConversation?.crewName && activeConversation.crewName !== "default") {
       getCrew(activeConversation.crewName).then(setActiveCrewDetail).catch(console.error);
     } else {
       setActiveCrewDetail(null);
@@ -56,7 +57,7 @@ export default function Home() {
   }, [activeConversation?.crewName]);
 
   const handleNewConversation = () => {
-    const defaultCrew = availableCrews[0] || "Reviewer.yaml";
+    const defaultCrew = "default";
     const newConv = createConversation(defaultCrew);
     setConversations([newConv, ...conversations]);
     setActiveId(newConv.id);
@@ -97,6 +98,7 @@ export default function Home() {
           inputs,
           max_rpm: options?.max_rpm || 15,
           llm_override: options?.llm_override || null,
+          session_id: convId,
         },
         (chunk: SSEChunk) => {
           // Update lot store if it's a step
@@ -147,7 +149,10 @@ export default function Home() {
   const handleSendMessage = (message: string) => {
     handleLaunchCrew({
       message,
-      inputs: { message },
+      inputs: { 
+        message, 
+        project_path: activeConversation?.folderContext || "." 
+      },
     });
   };
 
@@ -200,6 +205,12 @@ export default function Home() {
               );
             }}
             headerAction={activeCrewDetail ? <CrewConfig crewDetail={activeCrewDetail} onUpdate={setActiveCrewDetail} /> : undefined}
+            folderContext={activeConversation.folderContext}
+            onFolderChange={(folder) => {
+              setConversations(prev => 
+                prev.map(c => c.id === activeConversation.id ? updateConversationFolder(c, folder) : c)
+              );
+            }}
             onSendMessage={handleSendMessage}
             onLaunchCrew={handleLaunchCrew}
             onStop={handleStop}

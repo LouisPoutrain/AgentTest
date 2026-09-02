@@ -26,6 +26,14 @@ from app.tools.custom_tools import (
     run_test_command,
     generate_archify_diagram,
     execute_crew,
+    research_state_of_the_art,
+    download_resources,
+    generate_state_of_the_art_report,
+    generate_state_of_the_art_html,
+    # NOUVEAUX OUTILS POUR EducationalContentCreator
+    research_educational_resources,
+    generate_educational_html,
+    generate_educational_markdown,
 )
 
 # Instancier les nouveaux outils
@@ -49,9 +57,17 @@ AVAILABLE_TOOLS: dict[str, object] = {
     "run_test_command": run_test_command,
     "generate_archify_diagram": generate_archify_diagram,
     "execute_crew": execute_crew,
-    # Nouveaux outils
+    # Outils existants
     "file_editor": file_editor,
     "terminal_runner": terminal_runner,
+    "research_state_of_the_art": research_state_of_the_art,
+    "download_resources": download_resources,
+    "generate_state_of_the_art_report": generate_state_of_the_art_report,
+    "generate_state_of_the_art_html": generate_state_of_the_art_html,
+    # NOUVEAUX OUTILS
+    "research_educational_resources": research_educational_resources,
+    "generate_educational_html": generate_educational_html,
+    "generate_educational_markdown": generate_educational_markdown,
 }
 
 def get_tool_names() -> list[str]:

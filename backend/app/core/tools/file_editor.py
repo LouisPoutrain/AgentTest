@@ -9,6 +9,9 @@ from typing import Optional
 
 from crewai.tools import BaseTool
 
+PROJECT_ROOT = Path(__file__).resolve().parents[4]
+WORKSPACE_ROOT = PROJECT_ROOT.parent
+
 
 class FileEditorTool(BaseTool):
     """Outil pour éditer les fichiers du projet."""
@@ -50,10 +53,10 @@ class FileEditorTool(BaseTool):
                 if not file_path:
                     return "Erreur : 'file_path' est requis pour l'action 'read'."
                 
-                # Sécurité : empêcher la traversée de répertoires
-                resolved_path = Path(file_path).resolve()
-                if not str(resolved_path).startswith(str(Path.cwd())):
-                    return f"Erreur : Accès refusé au fichier en dehors du répertoire de travail : {file_path}"
+                # Sécurité : empêcher la traversée de répertoires hors du workspace
+                resolved_path = (PROJECT_ROOT / file_path).resolve()
+                if not str(resolved_path).startswith(str(WORKSPACE_ROOT)):
+                    return f"Erreur : Accès refusé au fichier en dehors de l'espace de travail : {file_path}"
 
                 if not resolved_path.exists():
                     return f"Erreur : Fichier introuvable : {file_path}"
@@ -70,9 +73,9 @@ class FileEditorTool(BaseTool):
                 if content is None:
                     return "Erreur : 'content' est requis pour l'action 'write'."
 
-                resolved_path = Path(file_path).resolve()
-                if not str(resolved_path).startswith(str(Path.cwd())):
-                    return f"Erreur : Accès refusé au fichier en dehors du répertoire de travail : {file_path}"
+                resolved_path = (PROJECT_ROOT / file_path).resolve()
+                if not str(resolved_path).startswith(str(WORKSPACE_ROOT)):
+                    return f"Erreur : Accès refusé au fichier en dehors de l'espace de travail : {file_path}"
 
                 # Créer les répertoires parents si nécessaire
                 resolved_path.parent.mkdir(parents=True, exist_ok=True)
@@ -86,11 +89,11 @@ class FileEditorTool(BaseTool):
                 if not pattern:
                     return "Erreur : 'pattern' est requis pour l'action 'search'."
                 if not directory:
-                    directory = '.'
+                    directory = str(PROJECT_ROOT)
 
-                resolved_dir = Path(directory).resolve()
-                if not str(resolved_dir).startswith(str(Path.cwd())):
-                    return f"Erreur : Accès refusé au répertoire en dehors du répertoire de travail : {directory}"
+                resolved_dir = (PROJECT_ROOT / directory).resolve()
+                if not str(resolved_dir).startswith(str(WORKSPACE_ROOT)):
+                    return f"Erreur : Accès refusé au répertoire en dehors de l'espace de travail : {directory}"
 
                 if not resolved_dir.exists() or not resolved_dir.is_dir():
                     return f"Erreur : Répertoire introuvable ou invalide : {directory}"
@@ -99,11 +102,11 @@ class FileEditorTool(BaseTool):
                 for root, _, files in os.walk(resolved_dir):
                     for file in files:
                         if file.endswith(('.py', '.js', '.ts', '.tsx', '.jsx', '.html', '.css', '.md', '.yaml', '.yml', '.json')):
-                            file_path = Path(root) / file
+                            file_path_obj = Path(root) / file
                             try:
-                                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                                with open(file_path_obj, 'r', encoding='utf-8', errors='ignore') as f:
                                     if re.search(pattern, f.read()):
-                                        results.append(str(file_path.relative_to(Path.cwd())))
+                                        results.append(str(file_path_obj.relative_to(PROJECT_ROOT)))
                             except Exception:
                                 pass
 
@@ -114,18 +117,21 @@ class FileEditorTool(BaseTool):
 
             elif action == "list":
                 if not directory:
-                    directory = '.'
+                    directory = str(PROJECT_ROOT)
 
-                resolved_dir = Path(directory).resolve()
-                if not str(resolved_dir).startswith(str(Path.cwd())):
-                    return f"Erreur : Accès refusé au répertoire en dehors du répertoire de travail : {directory}"
+                resolved_dir = (PROJECT_ROOT / directory).resolve()
+                if not str(resolved_dir).startswith(str(WORKSPACE_ROOT)):
+                    return f"Erreur : Accès refusé au répertoire en dehors de l'espace de travail : {directory}"
 
                 if not resolved_dir.exists() or not resolved_dir.is_dir():
                     return f"Erreur : Répertoire introuvable ou invalide : {directory}"
 
                 items = []
                 for item in resolved_dir.iterdir():
-                    rel_path = item.relative_to(Path.cwd())
+                    try:
+                        rel_path = item.relative_to(PROJECT_ROOT)
+                    except ValueError:
+                        rel_path = item.relative_to(WORKSPACE_ROOT)
                     prefix = "📁 " if item.is_dir() else "📄 "
                     items.append(f"{prefix}{rel_path}")
                 

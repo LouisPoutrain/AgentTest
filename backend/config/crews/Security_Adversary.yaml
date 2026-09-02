@@ -1,0 +1,90 @@
+crew_settings:
+  process: Séquentiel
+  memory: true
+  max_rpm: 10
+agents:
+- name: Analyste_Surface_Attaque
+  role: Expert en Reconnaissance et Pentesting
+  goal: Identifier les points d'entrée vulnérables et la surface d'attaque du projet.
+  backstory: >
+    Tu penses comme un hacker éthique. Tu analyses les endpoints API, les entrées utilisateur
+    et les dépendances pour trouver des vecteurs d'attaque potentiels (Injection, XSS, RCE).
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - list_directory
+  - read_file
+  verbose: true
+  allow_delegation: false
+
+- name: Generateur_Payloads
+  role: Ingénieur en Exploitation
+  goal: Créer des payloads de test spécifiques pour tenter d'exploiter les vulnérabilités trouvées.
+  backstory: >
+    Tu es un expert en création de payloads. Tu sais comment contourner les filtres basiques
+    pour tester la robustesse réelle d'un système.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - read_file
+  verbose: true
+  allow_delegation: false
+
+- name: Executeur_Exploit
+  role: Pentester Opérationnel
+  goal: Exécuter les payloads de manière sécurisée dans Docker et valider la vulnérabilité.
+  backstory: >
+    Tu es chargé de la phase d'exécution. Tu lances les tests d'intrusion via 'execute_python_code'
+    ou 'run_test_command' en t'assurant que tout reste strictement isolé dans un conteneur.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - execute_python_code
+  - run_test_command
+  verbose: true
+  allow_delegation: false
+
+- name: Rapporteur_Securite
+  role: Consultant en Cybersécurité
+  goal: Synthétiser les tentatives d'attaque en un rapport de vulnérabilité actionnable.
+  backstory: >
+    Tu transformes des logs techniques d'exploitation en un rapport professionnel
+    classant les failles par score CVSS et proposant des remédiations précises.
+  llm: openai/qwen-3.6-35b-instruct
+  tools:
+  - write_file
+  verbose: true
+  allow_delegation: false
+
+tasks:
+- description: >
+    Analyser la surface d'attaque du projet suivant : "{message}".
+
+    1. Explore le code pour trouver tous les points d'entrée (API, formulaires, uploads).
+    2. Identifie les vulnérabilités potentielles basées sur les patterns de code.
+  agent: Analyste_Surface_Attaque
+  expected_output: Une cartographie des vecteurs d'attaque potentiels.
+
+- description: >
+    Générer des payloads de test :
+
+    1. Pour chaque vulnérabilité identifiée, crée un payload de test spécifique.
+    2. Documente l'objectif de chaque payload (ex: "Tenter une injection SQL sur l'endpoint /login").
+  agent: Generateur_Payloads
+  expected_output: Une liste de payloads de test prêts à être exécutés.
+
+- description: >
+    Exécuter les tests d'intrusion :
+
+    1. Lance chaque payload via 'execute_python_code' ou 'run_test_command'.
+    2. Analyse la réponse du système pour confirmer si l'attaque a réussi.
+    3. Documente la preuve de concept (PoC).
+  agent: Executeur_Exploit
+  expected_output: Un log d'exécution détaillant les réussites et échecs des tentatives d'exploitation.
+
+- description: >
+    Rédiger le rapport final :
+
+    1. Synthétise les résultats.
+    2. Classe les vulnérabilités par criticité.
+    3. Propose des correctifs de code pour chaque faille confirmée.
+    4. Sauvegarde le rapport sous 'SECURITY_AUDIT.md' dans le projet.
+  agent: Rapporteur_Securite
+  expected_output: Un rapport de sécurité professionnel 'SECURITY_AUDIT.md'.

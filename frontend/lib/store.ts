@@ -81,3 +81,13 @@ export function updateConversationCrew(
     title: `${crewName} — ${new Date(conversation.createdAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`
   };
 }
+
+export function updateConversationFolder(
+  conversation: Conversation,
+  folderContext: string
+): Conversation {
+  return {
+    ...conversation,
+    folderContext
+  };
+}
