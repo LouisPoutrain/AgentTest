@@ -61,6 +61,10 @@ async function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  if (process.platform === 'darwin') {
+    app.dock.setIcon(path.join(__dirname, 'icon.jpg'));
+  }
+
   startBackend();
   startFrontend();
   
