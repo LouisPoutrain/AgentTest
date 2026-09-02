@@ -1,8 +1,9 @@
 {
-  "name": "agenttest-desktop",
+  "name": "agent-zouglou",
+  "productName": "Agent Zouglou",
   "version": "0.1.0",
   "main": "main.js",
-  "description": "Desktop Application for AgentTest",
+  "description": "Desktop Application for Agent Zouglou",
   "scripts": {
     "start": "electron ."
   },

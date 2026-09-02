@@ -86,7 +86,7 @@ export function Sidebar({ conversations, activeId, onSelect, onNew, availableCre
           <ManageCrewsDialog availableCrews={availableCrews} onRefreshCrews={onRefreshCrews} />
         </div>
         <div className="text-xs text-text-secondary/50">
-          AgentTest v2.0
+          Agent Zouglou v2.0
         </div>
       </div>
     </div>
