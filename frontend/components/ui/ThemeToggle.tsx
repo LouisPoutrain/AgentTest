@@ -1,21 +1,16 @@
 "use client";
+
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
 import { Button } from "./button";
 import { Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { transitionClasses } from "@/src/theme";
+import { motion } from "framer-motion";
 
 export function ThemeToggle({ className }: { className?: string }) {
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return <div className="w-8 h-8" />; // Placeholder pour éviter le flash
+  if (!resolvedTheme) {
+    return <div className="w-7 h-7" aria-hidden="true" />;
   }
 
   return (
@@ -23,14 +18,27 @@ export function ThemeToggle({ className }: { className?: string }) {
       variant="ghost"
       size="icon"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-      className={cn(transitionClasses.base, className)}
+      className={cn(
+        "h-8 w-8 rounded-lg",
+        "relative overflow-hidden",
+        "before:absolute before:inset-0 before:bg-accent/5 before:opacity-0 before:transition-opacity",
+        "hover:before:opacity-100",
+        className
+      )}
       aria-label="Basculer le thème"
     >
-      {resolvedTheme === "dark" ? (
-        <Moon className="h-5 w-5" />
-      ) : (
-        <Sun className="h-5 w-5" />
-      )}
+      <motion.div
+        key={resolvedTheme}
+        initial={{ rotate: -90, opacity: 0 }}
+        animate={{ rotate: 0, opacity: 1 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+      >
+        {resolvedTheme === "dark" ? (
+          <Moon className="h-4 w-4" />
+        ) : (
+          <Sun className="h-4 w-4" />
+        )}
+      </motion.div>
     </Button>
   );
 }

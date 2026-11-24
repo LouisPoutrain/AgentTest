@@ -5,6 +5,24 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * Root Tabs container. Wraps `TabsList`, `TabsTrigger`, and `TabsContent`
+ * to create a tabbed interface.
+ *
+ * @param props - All props from `@base-ui/react/tabs` `Root.Props`, plus:
+ *   - `className` — Additional CSS classes applied to the root element.
+ *   - `orientation` — Tab orientation: `"horizontal"` (default) or `"vertical"`.
+ * @returns A `TabsPrimitive.Root` element with group styling and data attributes.
+ * @example
+ *   <Tabs defaultValue="account">
+ *     <TabsList>
+ *       <TabsTrigger value="account">Account</TabsTrigger>
+ *       <TabsTrigger value="settings">Settings</TabsTrigger>
+ *     </TabsList>
+ *     <TabsContent value="account">Account content</TabsContent>
+ *     <TabsContent value="settings">Settings content</TabsContent>
+ *   </Tabs>
+ */
 function Tabs({
   className,
   orientation = "horizontal",
@@ -23,6 +41,17 @@ function Tabs({
   )
 }
 
+/**
+ * Class-variance-authority variants for `TabsList` styling.
+ *
+ * Defines two visual variants:
+ * - `default` — Rounded pill with muted background.
+ * - `line` — Flat, transparent background with gap between triggers.
+ *
+ * @param options - Variant configuration object.
+ * @param options.variant - The variant to apply: `"default"` or `"line"`.
+ * @returns A merged class string with the selected variant's styles.
+ */
 const tabsListVariants = cva(
   "group/tabs-list inline-flex w-fit items-center justify-center rounded-lg p-[3px] text-muted-foreground group-data-horizontal/tabs:h-8 group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col data-[variant=line]:rounded-none",
   {
@@ -38,6 +67,20 @@ const tabsListVariants = cva(
   }
 )
 
+/**
+ * Container for tab triggers. Renders a rounded pill or flat bar depending
+ * on the `variant` prop.
+ *
+ * @param props - Combined props from `@base-ui/react/tabs` `List.Props` and:
+ *   - `className` — Additional CSS classes applied to the list element.
+ *   - `variant` — Visual style: `"default"` (rounded pill with background, default) or `"line"` (flat with gap).
+ * @returns A `TabsPrimitive.List` element with variant-based styling.
+ * @example
+ *   <TabsList>
+ *     <TabsTrigger value="a">Tab A</TabsTrigger>
+ *     <TabsTrigger value="b">Tab B</TabsTrigger>
+ *   </TabsList>
+ */
 function TabsList({
   className,
   variant = "default",
@@ -53,6 +96,15 @@ function TabsList({
   )
 }
 
+/**
+ * Individual tab button that activates its associated `TabsContent` panel.
+ *
+ * @param props - All props from `@base-ui/react/tabs` `Tab.Props`, plus:
+ *   - `className` — Additional CSS classes applied to the trigger element.
+ * @returns A `TabsPrimitive.Tab` element with focus, hover, and active state styling.
+ * @example
+ *   <TabsTrigger value="account">Account</TabsTrigger>
+ */
 function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
   return (
     <TabsPrimitive.Tab
@@ -69,6 +121,16 @@ function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
   )
 }
 
+/**
+ * Content panel associated with a `TabsTrigger`. Only visible when its
+ * matching trigger is active.
+ *
+ * @param props - All props from `@base-ui/react/tabs` `Panel.Props`, plus:
+ *   - `className` — Additional CSS classes applied to the content panel.
+ * @returns A `TabsPrimitive.Panel` element with flex layout and outline reset.
+ * @example
+ *   <TabsContent value="account">Account settings go here.</TabsContent>
+ */
 function TabsContent({ className, ...props }: TabsPrimitive.Panel.Props) {
   return (
     <TabsPrimitive.Panel

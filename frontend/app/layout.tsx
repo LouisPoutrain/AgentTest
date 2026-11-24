@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import { QueryProvider } from "@/components/QueryProvider";
+import { Toaster } from "@/components/ui/toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,6 +20,12 @@ export const metadata: Metadata = {
   description: "Orchestration d'agents IA en temps réel",
 };
 
+/**
+ * Root layout for the Agent Zouglou application.
+ *
+ * Provides the font variables, theme provider, query provider,
+ * and toast notifications for all child pages.
+ */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
@@ -30,11 +37,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <QueryProvider>
           <ThemeProvider
             attribute="class"
-            defaultTheme="system"
-            enableSystem
+            defaultTheme="light"
+            enableSystem={false}
             disableTransitionOnChange={false}
           >
             {children}
+            <Toaster />
           </ThemeProvider>
         </QueryProvider>
       </body>

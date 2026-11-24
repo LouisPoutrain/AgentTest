@@ -7,22 +7,74 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
 
+/**
+ * A container that renders a sheet (slide-out panel) anchored to one edge of the viewport.
+ *
+ * @example
+ * ```tsx
+ * <Sheet>
+ *   <SheetTrigger asChild>
+ *     <Button variant="outline">Open Settings</Button>
+ *   </SheetTrigger>
+ *   <SheetContent>
+ *     <SheetHeader>Settings</SheetHeader>
+ *     <SheetDescription>Manage your preferences.</SheetDescription>
+ *     <SheetFooter>
+ *       <Button>Save</Button>
+ *     </SheetFooter>
+ *   </SheetContent>
+ * </Sheet>
+ * ```
+ */
 function Sheet({ ...props }: SheetPrimitive.Root.Props) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />
 }
 
+/**
+ * Triggers the associated sheet to open when interacted with.
+ *
+ * @example
+ * ```tsx
+ * <SheetTrigger asChild>
+ *   <Button>Open Sheet</Button>
+ * </SheetTrigger>
+ * ```
+ */
 function SheetTrigger({ ...props }: SheetPrimitive.Trigger.Props) {
   return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />
 }
 
+/**
+ * Closes the associated sheet when rendered inside `SheetContent`.
+ *
+ * @example
+ * ```tsx
+ * <SheetClose asChild>
+ *   <Button variant="secondary">Cancel</Button>
+ * </SheetClose>
+ * ```
+ */
 function SheetClose({ ...props }: SheetPrimitive.Close.Props) {
   return <SheetPrimitive.Close data-slot="sheet-close" {...props} />
 }
 
+/**
+ * Renders the sheet inside a React portal anchored to `document.body`.
+ *
+ * This component is typically used internally by `SheetContent` and does not
+ * need to be rendered directly in application code.
+ */
 function SheetPortal({ ...props }: SheetPrimitive.Portal.Props) {
   return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />
 }
 
+/**
+ * Dark overlay displayed behind the sheet when it is open.
+ *
+ * Applies a semi-transparent black backdrop with a subtle blur and a smooth
+ * opacity transition. The overlay closes the sheet when clicked unless a
+ * `onPointerDownOutside` handler calls `event.preventDefault()`.
+ */
 function SheetOverlay({ className, ...props }: SheetPrimitive.Backdrop.Props) {
   return (
     <SheetPrimitive.Backdrop
@@ -36,6 +88,26 @@ function SheetOverlay({ className, ...props }: SheetPrimitive.Backdrop.Props) {
   )
 }
 
+/**
+ * The main sheet panel that slides in from a configurable edge.
+ *
+ * Renders a portal with an overlay, the sheet popup panel, and an optional
+ * close button. The panel uses CSS transitions for slide-in/out animations
+ * and adapts its size and inset based on the `side` prop.
+ *
+ * @example
+ * ```tsx
+ * <SheetContent side="right">
+ *   <SheetHeader>
+ *     <SheetTitle>Profile</SheetTitle>
+ *     <SheetDescription>Edit your public profile.</SheetDescription>
+ *   </SheetHeader>
+ *   <SheetFooter>
+ *     <Button>Save changes</Button>
+ *   </SheetFooter>
+ * </SheetContent>
+ * ```
+ */
 function SheetContent({
   className,
   children,
@@ -43,7 +115,9 @@ function SheetContent({
   showCloseButton = true,
   ...props
 }: SheetPrimitive.Popup.Props & {
+  /** Which edge the sheet slides in from. Defaults to `"right"`. */
   side?: "top" | "right" | "bottom" | "left"
+  /** Whether to render a close button in the top corner. Defaults to `true`. */
   showCloseButton?: boolean
 }) {
   return (
@@ -80,6 +154,20 @@ function SheetContent({
   )
 }
 
+/**
+ * Header section placed at the top of the sheet content.
+ *
+ * Stacks its children vertically with tight spacing and padding. Typically
+ * contains a `SheetTitle` and `SheetDescription`.
+ *
+ * @example
+ * ```tsx
+ * <SheetHeader>
+ *   <SheetTitle>Confirm</SheetTitle>
+ *   <SheetDescription>This action cannot be undone.</SheetDescription>
+ * </SheetHeader>
+ * ```
+ */
 function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -90,6 +178,22 @@ function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/**
+ * Footer section pinned to the bottom of the sheet content.
+ *
+ * Stacks its children vertically with spacing and padding. Typically
+ * contains action buttons such as "Save" and "Cancel".
+ *
+ * @example
+ * ```tsx
+ * <SheetFooter>
+ *   <SheetClose asChild>
+ *     <Button variant="secondary">Cancel</Button>
+ *   </SheetClose>
+ *   <Button>Save</Button>
+ * </SheetFooter>
+ * ```
+ */
 function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -100,6 +204,12 @@ function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/**
+ * Title heading rendered inside the sheet header.
+ *
+ * Uses the project's heading font family with a medium weight and the
+ * current foreground color.
+ */
 function SheetTitle({ className, ...props }: SheetPrimitive.Title.Props) {
   return (
     <SheetPrimitive.Title
@@ -113,6 +223,12 @@ function SheetTitle({ className, ...props }: SheetPrimitive.Title.Props) {
   )
 }
 
+/**
+ * Descriptive text rendered below the sheet title.
+ *
+ * Uses a muted foreground color and small font size to provide context
+ * or instructions for the sheet's content.
+ */
 function SheetDescription({
   className,
   ...props
