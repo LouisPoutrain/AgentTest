@@ -1,6 +1,8 @@
-# AgentTest API
+# Agent Zouglou — Backend API
 
-Bienvenue dans la documentation de **AgentTest API**. Cette application est une API RESTful construite avec **FastAPI**, conçue pour orchestrer des agents IA (Crews) et gérer des interactions complexes via un routeur intelligent.
+Documentation de l'API **FastAPI** d'Agent Zouglou. Pour une vue d'ensemble du projet, l'installation et le quick start, consultez le [README racine](../README.md).
+
+Cette API est conçue pour orchestrer des agents IA (Crews) et gérer des interactions complexes via un routeur intelligent.
 
 ## 📋 Table des Matières
 
@@ -25,22 +27,22 @@ L'API repose sur plusieurs modules clés :
 
 ## 🚀 Installation
 
-1. Clonez le dépôt :
+1. Depuis la racine du projet, créez l'environnement virtuel et installez les dépendances :
    ```bash
-   git clone <repository-url>
-   cd agent-test-api
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r backend/requirements.txt
    ```
 
-2. Installez les dépendances :
+2. Configurez les variables d'environnement :
    ```bash
-   pip install -r requirements.txt
+   cp backend/.env.example backend/.env
+   # Éditez backend/.env avec votre clé API LLM
    ```
 
-3. Configurez les variables d'environnement (voir ci-dessous).
-
-4. Lancez le serveur :
+3. Lancez le serveur :
    ```bash
-   uvicorn app.main:app --reload
+   PYTHONPATH=backend .venv/bin/uvicorn app.main:app --reload --port 8000
    ```
 
 ## ⚙️ Configuration
