@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class CrewSettings(BaseModel):
@@ -21,6 +21,22 @@ class CrewCreate(BaseModel):
     name: str = Field(..., min_length=1, description="Nom du Crew (sans .yaml)")
     settings: CrewSettings = Field(default_factory=CrewSettings)
 
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        """Validate crew name for safety and format."""
+        if not v:
+            raise ValueError("Crew name cannot be empty")
+        if len(v) > 100:
+            raise ValueError("Crew name cannot exceed 100 characters")
+        if ".." in v or "/" in v or "\\" in v:
+            raise ValueError("Crew name cannot contain path traversal characters")
+        if not all(c.isalnum() or c in ("_", "-") for c in v):
+            raise ValueError(
+                "Crew name can only contain alphanumeric characters, underscores, and hyphens"
+            )
+        return v
+
 
 class AgentCreate(BaseModel):
     """Corps de la requête POST /api/crews/{name}/agents."""
@@ -29,7 +45,7 @@ class AgentCreate(BaseModel):
     role: str = Field(..., min_length=1)
     goal: str = Field(..., min_length=1)
     backstory: str = Field(..., min_length=1)
-    llm: str = Field(default="gemini/gemini-2.5-flash")
+    llm: str = Field(default="openai/")
     tools: list[str] = Field(default_factory=list)
     verbose: bool = True
     allow_delegation: bool = False

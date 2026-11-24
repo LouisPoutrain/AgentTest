@@ -1,7 +1,18 @@
+# Git .yaml — GitHub repository discovery and analysis
+#
+# Purpose: Searches GitHub to find the most relevant, recent, and quality
+#          repositories matching a user's request. Acts as a tech scout.
+#
+# Usage: POST /api/chat with crew_name: "Git " (note the trailing space)
+# LLM: openai/qwen-3.6-35b-instruct
+# Process: Sequential — single agent works step by step
+# Memory: Disabled
+# Rate limit: 15 requests/minute
+
 crew_settings:
-  process: Séquentiel
-  memory: false
-  max_rpm: 15
+  process: "Séquentiel"    # Single agent works sequentially
+  memory: false              # No persistent memory needed for search tasks
+  max_rpm: 15                # Moderate rate limit for web searches
 agents:
 - name: Git_Scrapper
   role: Analyste Senior en Veille Technologique GitHub
@@ -12,9 +23,9 @@ agents:
     les vrais bons projets : tu fais attention au nombre d''étoiles, à l''activité
     récente et à la qualité de la documentation. Tu refuses de proposer des projets
     abandonnés.'
-  llm: openai/qwen-3.6-35b-instruct
+  llm: "openai/qwen-3.6-35b-instruct"  # Qwen model for good search/reasoning balance
   tools:
-  - web_search
+  - web_search               # Web search tool to find GitHub repos
   verbose: true
   allow_delegation: false
 tasks:

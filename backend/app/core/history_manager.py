@@ -12,8 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-# Chemin vers la DB à la racine du backend
-DB_PATH = Path(__file__).resolve().parent.parent.parent / "sessions.db"
+from app.core.config import DB_PATH
 
 class HistoryManager:
     def __init__(self):
@@ -69,7 +68,7 @@ class HistoryManager:
             cursor = conn.cursor()
             cursor.execute(
                 "INSERT INTO messages (message_id, session_id, role, content, crew_used, timestamp, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (msg_id, session_id, role, content, datetime.now(timezone.utc).isoformat(), crew_used, json.dumps(metadata) if metadata else None)
+                (msg_id, session_id, role, content, crew_used, datetime.now(timezone.utc).isoformat(), json.dumps(metadata) if metadata else None)
             )
             conn.commit()
         return msg_id

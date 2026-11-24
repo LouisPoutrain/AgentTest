@@ -8,58 +8,37 @@ et yield les logs ligne par ligne (compatible SSE).
 
 from __future__ import annotations
 
+import concurrent.futures
 import json
 import logging
 import os
 import queue
+import re
 import sys
 import threading
 import time
+import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Generator
 
-# ── Protection contre les déconnexions de TTY [Errno 5] ───────────────────────
-class SafeStreamWriter:
-    """Empêche les crashs [Errno 5] Input/output error lorsque stdout/stderr perdent leur TTY."""
-    def __init__(self, target):
-        self.target = target
+import litellm
 
-    def write(self, s):
-        try:
-            if self.target:
-                return self.target.write(s)
-        except (OSError, IOError, BrokenPipeError):
-            pass
+from app.core.safe_stream_writer import install_safe_streams
 
-    def flush(self):
-        try:
-            if self.target:
-                self.target.flush()
-        except (OSError, IOError, BrokenPipeError):
-            pass
-
-    def isatty(self):
-        try:
-            return self.target.isatty()
-        except Exception:
-            return False
-
-    def __getattr__(self, name):
-        return getattr(self.target, name)
-
-if not isinstance(sys.stdout, SafeStreamWriter):
-    sys.stdout = SafeStreamWriter(sys.stdout)
-if not isinstance(sys.stderr, SafeStreamWriter):
-    sys.stderr = SafeStreamWriter(sys.stderr)
+install_safe_streams()
 
 # ── Wrapper Sécurisé LiteLLM (Remplace le Monkeypatch Global) ─────────────────
-import litellm
-import threading
 
 _orig_completion = litellm.completion
-thread_queues = {}
+# thread_queues: thread_id -> queue, cleaned up when thread finishes
+thread_queues: dict[int, "queue.Queue"] = {}
 _litellm_patched = False
+
+
+def _cleanup_thread_queue(thread_id: int) -> None:
+    """Remove a thread's queue entry to prevent unbounded dict growth."""
+    thread_queues.pop(thread_id, None)
 
 def setup_litellm_interceptor():
     """Installe le wrapper sécurisé sur litellm.completion s'il n'est pas déjà présent."""
@@ -74,14 +53,14 @@ def setup_litellm_interceptor():
             for key in ["api_key", "headers", "Authorization"]:
                 if key in safe_kwargs:
                     safe_kwargs[key] = "***REDACTED***"
-            logging.error(f"🚀 LITELLM KWARGS JSON: {json.dumps(safe_kwargs)}")
+            logging.debug("LITELLM KWARGS JSON: %s", json.dumps(safe_kwargs))
         except Exception as e:
-            logging.error(f"🚀 LITELLM KWARGS (non-json): {str(e)}")
-            
+            logging.debug("LITELLM KWARGS (non-json): %s", str(e))
+
         # 2. Nettoyage préventif des arguments
         if "tools" in kwargs and not kwargs["tools"]:
             del kwargs["tools"]
-            logging.error("🧹 Removed empty tools list from kwargs")
+            logging.debug("Removed empty tools list from kwargs")
             
         if "tools" not in kwargs and "messages" in kwargs and isinstance(kwargs["messages"], list):
             if kwargs.get("model", "").startswith("openai/"):
@@ -119,14 +98,19 @@ def setup_litellm_interceptor():
                 )
                 if is_transient and attempt < max_retries - 1:
                     wait_time = 2 * (attempt + 1)
-                    logging.warning(f"⚠️ Erreur temporaire LLM ({err_str[:100]}...), nouvelle tentative {attempt + 2}/{max_retries} dans {wait_time}s...")
+                    logging.warning(
+                        "Temporary LLM error (%s...), retry %d/%d in %ds...",
+                        err_str[:100], attempt + 2, max_retries, wait_time
+                    )
                     time.sleep(wait_time)
                     continue
 
-                import traceback
-                logging.error(f"❌ LITELLM ERROR IN SECURE WRAPPER: {type(e)} - {e}\n{traceback.format_exc()}")
+                logging.error(
+                    "LITELLM ERROR IN SECURE WRAPPER: %s - %s\n%s",
+                    type(e).__name__, e, traceback.format_exc()
+                )
                 if hasattr(e, "status_code"):
-                    logging.error(f"❌ LITELLM ERROR STATUS CODE: {getattr(e, 'status_code')}")
+                    logging.error("LITELLM ERROR STATUS CODE: %s", getattr(e, "status_code"))
                 raise e
 
     litellm.completion = _secure_completion
@@ -248,7 +232,7 @@ class CrewExecutionService:
         )
         return agents, tasks
 
-    def _execute_crew_and_stream(self, crew: Crew, log_queue: queue.Queue) -> Generator[str, None, None]:
+    def _execute_crew_and_stream(self, crew: Crew, log_queue: queue.Queue, inputs: dict | None = None) -> Generator[str, None, None]:
         """
         Lance le kickoff du crew et stream les logs depuis la queue jusqu'à la fin.
         """
@@ -260,26 +244,50 @@ class CrewExecutionService:
                 except queue.Empty:
                     break
                 except Exception as e:
-                    logging.error(f"Error reading log queue: {e}")
+                    logging.error("Error reading log queue: %s", e)
                     break
 
         try:
-            # Stream les logs existants pendant l'exécution
-            for log_chunk in stream_logs():
-                yield log_chunk
+            result_container = {}
+            error_container = {}
 
-            # Exécution principale
-            result = crew.kickoff()
-            
-            # Stream les logs restants après exécution
-            for log_chunk in stream_logs():
-                yield log_chunk
+            def run_kickoff():
+                try:
+                    result_container["result"] = crew.kickoff(inputs=inputs)
+                except Exception as e:
+                    error_container["error"] = e
 
-            # Yield le résultat final
-            yield self._make_chunk("result", str(result))
+            kickoff_thread = threading.Thread(target=run_kickoff)
+            kickoff_thread.start()
+
+            # Poll the queue while the thread is running
+            while kickoff_thread.is_alive():
+                try:
+                    msg = log_queue.get(timeout=0.5)
+                    yield self._make_chunk("log", msg)
+                except queue.Empty:
+                    pass
+
+            kickoff_thread.join()
+
+            # Clean up the kickoff thread's queue entry to prevent unbounded growth
+            _cleanup_thread_queue(kickoff_thread.ident)
+
+            # Process any remaining logs in the queue
+            while not log_queue.empty():
+                try:
+                    msg = log_queue.get_nowait()
+                    yield self._make_chunk("log", msg)
+                except queue.Empty:
+                    break
+
+            if "error" in error_container:
+                raise error_container["error"]
+
+            yield self._make_chunk("result", str(result_container.get("result", "")))
 
         except Exception as e:
-            logging.error(f"Crew execution error: {e}")
+            logging.error("Crew execution error: %s", e)
             yield self._make_chunk("error", str(e))
 
 
@@ -291,6 +299,7 @@ def run_crew(
     inputs: dict[str, Any] | None = None,
     max_rpm: int = 15,
     llm_override: str | None = None,
+    use_yaml_llm: bool = False,
 ) -> Generator[str, None, None]:
     """
     Point d'entrée principal pour exécuter un Crew.
@@ -303,9 +312,36 @@ def run_crew(
     service = CrewExecutionService()
     config_path = service._resolve_config_path(crew_name)
 
+    # Fallback par défaut quand aucun modèle n'est spécifié.
+    # Si use_yaml_llm est True, on n'applique AUCUN override : chaque agent
+    # utilise le modèle défini dans son YAML (per-agent LLM).
+    if use_yaml_llm:
+        effective_llm_override = None
+    else:
+        effective_llm_override = llm_override or "openai/qwen-3.6-35b-instruct"
+
+    inputs = inputs or {}
+    if message and "message" not in inputs:
+        inputs["message"] = message
+
     if not config_path.exists():
         yield service._make_chunk("error", f"Crew '{crew_name}' introuvable.")
         return
+
+    # Auto-inject missing template variables to prevent CrewAI from crashing.
+    # We deliberately skip variables that are expected to be provided by the
+    # caller (output_dir, project_path, pdf_path, message) so that the
+    # chat.py injection logic takes full control over them.
+    KNOWN_INPUT_VARS = {"output_dir", "project_path", "pdf_path", "pdf_alternatives", "message"}
+    try:
+        content = config_path.read_text(encoding="utf-8")
+        # Find all {variables} in the YAML, ignoring doubled braces {{ or }}
+        variables = set(re.findall(r'(?<!\{)\{([a-zA-Z_][a-zA-Z0-9_]*)\}(?!\})', content))
+        for var in variables:
+            if var not in inputs and var not in KNOWN_INPUT_VARS:
+                inputs[var] = "valeur_non_fournie"
+    except Exception as e:
+        logging.warning("Failed to auto-inject template variables: %s", e)
 
     # Configuration initiale
     service._configure_env_variables()
@@ -326,8 +362,8 @@ def run_crew(
 
         # Instanciation
         agents, tasks = service._create_agents_and_tasks(
-            config_path, 
-            llm_override, 
+            config_path,
+            effective_llm_override,
             log_queue
         )
 
@@ -343,8 +379,209 @@ def run_crew(
         )
 
         # Exécution et Streaming
-        yield from service._execute_crew_and_stream(crew, log_queue)
+        yield from service._execute_crew_and_stream(crew, log_queue, inputs=inputs)
 
     except Exception as e:
-        logging.error(f"Failed to run crew '{crew_name}': {e}", exc_info=True)
+        logging.error("Failed to run crew '%s': %s", crew_name, e, exc_info=True)
         yield service._make_chunk("error", f"Erreur critique lors de l'exécution du Crew : {str(e)}")
+
+
+def run_multi_crew(
+    crew_names: list[str],
+    message: str,
+    execution_mode: str = "sequential",
+    inputs: dict[str, Any] | None = None,
+    max_rpm: int = 15,
+    llm_override: str | None = None,
+) -> Generator[str, None, None]:
+    """
+    Exécute plusieurs Crews en mode séquentiel ou parallèle.
+
+    Séquentiel : chaque crew reçoit le résultat du précédent comme contexte.
+    Parallèle : tous les crews s'exécutent simultanément, résultats agrégés.
+
+    Yields
+    ------
+    str
+        Chunks JSON tagués avec 'crewName' pour l'attribution frontend.
+    """
+    service = CrewExecutionService()
+    inputs = inputs or {}
+    accumulated_context = ""
+
+    # Ensure llm_override has a fallback so crews without explicit llm in YAML don't crash
+    effective_llm_override = llm_override or "openai/qwen-3.6-35b-instruct"
+
+    # Auto-inject output_dir for InteractiveCourseCreator in multi-crew mode
+    if "InteractiveCourseCreator" in crew_names:
+        project_path = inputs.get("project_path", ".")
+        resolved_project = str(Path(project_path).resolve())
+        inputs["project_path"] = resolved_project
+        inputs["output_dir"] = str(Path(resolved_project) / "cours_interactif")
+        # pdf_path and pdf_alternatives are injected by the caller (chat.py)
+        # but we ensure they exist as template vars if missing
+        if "pdf_path" not in inputs:
+            inputs["pdf_path"] = ""
+        if "pdf_alternatives" not in inputs:
+            inputs["pdf_alternatives"] = []
+
+    if execution_mode == "sequential":
+        for idx, crew_name in enumerate(crew_names):
+            # Build the message with accumulated context for crews after the first
+            crew_inputs = dict(inputs)
+            if accumulated_context:
+                # Prepend context to the message so the crew can use it
+                crew_inputs["message"] = (
+                    f"[Contexte du crew précédent]\n{accumulated_context}\n\n---\n\n"
+                    f"[Ta mission]\n{message}"
+                )
+            else:
+                crew_inputs["message"] = message
+
+            yield service._make_chunk(
+                "log",
+                f"🔗 [Étape {idx + 1}/{len(crew_names)}] Exécution du crew {crew_name}...",
+                crewName=crew_name,
+            )
+
+            final_result = ""
+            for chunk in run_crew(
+                crew_name=crew_name,
+                message=crew_inputs.get("message", message),
+                inputs=crew_inputs,
+                max_rpm=max_rpm,
+                llm_override=effective_llm_override,
+            ):
+                # Tag every chunk with the current crew name
+                try:
+                    data = json.loads(chunk)
+                    data["crewName"] = crew_name
+                    yield json.dumps(data, ensure_ascii=False)
+                except Exception:
+                    # If chunk is already tagged or malformed, just yield as-is
+                    yield chunk
+
+                try:
+                    data = json.loads(chunk)
+                    if data.get("type") == "result":
+                        final_result = data.get("content", "")
+                except Exception:
+                    pass
+
+            # Accumulate result for next crew
+            if final_result:
+                accumulated_context = (
+                    (accumulated_context + "\n\n---\n\n") if accumulated_context else ""
+                ) + final_result
+                # Truncate to avoid context overflow
+                if len(accumulated_context) > 8000:
+                    accumulated_context = accumulated_context[-8000:]
+
+            yield service._make_chunk(
+                "log",
+                f"✅ [Étape {idx + 1}/{len(crew_names)}] Crew {crew_name} terminé.",
+                crewName=crew_name,
+            )
+
+    else:
+        # Parallel mode
+        for crew_name in crew_names:
+            yield service._make_chunk(
+                "log",
+                f"⚡ [Parallèle] Préparation du crew {crew_name}...",
+                crewName=crew_name,
+            )
+
+        results: dict[str, str] = {}
+        errors: dict[str, str] = {}
+        all_chunks: dict[str, list[str]] = {name: [] for name in crew_names}
+
+        def _run_single_crew(crew_name: str) -> tuple[str, list[str], str | None]:
+            chunks: list[str] = []
+            final_result = ""
+            try:
+                for chunk in run_crew(
+                    crew_name=crew_name,
+                    message=message,
+                    inputs=dict(inputs),
+                    max_rpm=max_rpm,
+                    llm_override=effective_llm_override,
+                ):
+                    try:
+                        data = json.loads(chunk)
+                        data["crewName"] = crew_name
+                        tagged = json.dumps(data, ensure_ascii=False)
+                    except Exception:
+                        tagged = chunk
+                    chunks.append(tagged)
+                    try:
+                        data = json.loads(chunk)
+                        if data.get("type") == "result":
+                            final_result = data.get("content", "")
+                    except Exception:
+                        pass
+                return crew_name, chunks, final_result
+            except Exception as e:
+                errors[crew_name] = str(e)
+                return crew_name, chunks, None
+
+        # Run all crews concurrently
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(crew_names), 5)) as executor:
+            futures = {executor.submit(_run_single_crew, name): name for name in crew_names}
+            for future in concurrent.futures.as_completed(futures):
+                crew_name, chunks, _ = future.result()
+                all_chunks[crew_name] = chunks
+
+        # Yield all chunks interleaved (round-robin to simulate real-time)
+        queues: dict[str, queue.Queue[str]] = {
+            name: queue.Queue() for name in crew_names
+        }
+
+        def _fill_queues():
+            for name, chunks in all_chunks.items():
+                for chunk in chunks:
+                    queues[name].put(chunk)
+
+        fill_thread = threading.Thread(target=_fill_queues)
+        fill_thread.start()
+
+        try:
+            # Interleave: yield one chunk from each non-empty queue in round-robin
+            active_queues = set(crew_names)
+            while active_queues:
+                yielded_any = False
+                for name in list(active_queues):
+                    try:
+                        chunk = queues[name].get_nowait()
+                        yield chunk
+                        yielded_any = True
+                    except queue.Empty:
+                        pass
+                if not yielded_any:
+                    # Check if all queues are done
+                    all_done = all(queues[name].empty() for name in active_queues)
+                    if all_done:
+                        break
+                    time.sleep(0.05)
+        finally:
+            fill_thread.join()
+
+        # Yield aggregated result
+        aggregated = "\n\n=== Résultat Agrégé ===\n\n"
+        for name in crew_names:
+            if name in errors:
+                aggregated += f"❌ **{name}** : {errors[name]}\n\n"
+            else:
+                aggregated += f"📋 **{name}**\n---\n"
+                # Extract result from last chunk
+                for chunk in reversed(all_chunks[name]):
+                    try:
+                        data = json.loads(chunk)
+                        if data.get("type") == "result":
+                            aggregated += data.get("content", "")
+                            break
+                    except Exception:
+                        pass
+                aggregated += "\n\n"
+
+        yield service._make_chunk("result", aggregated.strip())

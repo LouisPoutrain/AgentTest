@@ -31,6 +31,10 @@
     "Security_Adversary": {
       "description": "Pentesting et simulation d'attaques pour trouver des failles critiques.",
       "keywords": ["hack", "attaque", "payload", "intrusion", "exploit", "vulnérabilité"]
+    },
+    "InteractiveCourseCreator": {
+      "description": "Création de cours interactifs complets à partir d'un dossier de PDF (un ou plusieurs) — analyse en boucle avec vérification, site web moderne avec leçons, exercices et quiz, et correction de qualité.",
+      "keywords": ["cours", "formation", "pdf", "éducatif", "interactif", "html", "exercice", "quiz", "apprendre", "site", "leçon", "dossier", "plusieurs pdf"]
     }
   },
   "model_tiers": {

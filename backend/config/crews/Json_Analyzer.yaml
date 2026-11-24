@@ -1,11 +1,22 @@
+# Json_Analyzer.yaml — JSON data analysis crew
+#
+# Purpose: Reads a JSON file, calculates average age, and extracts distinct professions.
+#          A simple data-analysis crew for structured JSON inputs.
+#
+# Usage: POST /api/chat with crew_name: "Json_Analyzer"
+# LLM: openai/gpt-oss-120b
+# Process: Sequential — single agent works step by step
+# Memory: Disabled
+# Rate limit: 10 requests/minute
+
 name: Json_Analyzer
 description: |
   Crew dédié à l'analyse de fichiers JSON. Il lit le fichier, calcule la moyenne d'âge et extrait les professions distinctes.
 
 settings:
-  process: sequential
-  memory: false
-  max_rpm: 10
+  process: "sequential"      # Single agent processes sequentially
+  memory: false              # Each run is independent
+  max_rpm: 10                # Low rate limit for simple analysis task
 
 agents:
   - name: Json_Analyser_Agent
@@ -14,10 +25,10 @@ agents:
       Lire le fichier JSON fourni, calculer l'âge moyen et lister les professions distinctes.
     backstory: |
       Vous êtes un analyste de données spécialisé dans le traitement de JSON. Vous utilisez les outils disponibles pour lire, parser et analyser le contenu.
-    llm: openai/gpt-oss-120b
+    llm: "openai/gpt-oss-120b"  # Model for JSON parsing and numerical analysis
     tools:
-      - read_file
-      - write_file
+      - read_file              # Read the input JSON file
+      - write_file             # Write the analysis report
     verbose: true
     allow_delegation: false
 
