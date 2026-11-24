@@ -14,6 +14,7 @@ function startBackend() {
   console.log('Starting Python backend...');
   backendProcess = spawn(venvPath, ['app.main:app', '--host', '127.0.0.1', '--port', '8000'], {
     cwd: backendDir,
+    env: { ...process.env, PYTHONPATH: path.join(__dirname, '..') },
     stdio: 'inherit'
   });
 
@@ -23,11 +24,12 @@ function startBackend() {
 }
 
 function startFrontend() {
-  const servePath = path.join(__dirname, 'node_modules', '.bin', 'serve');
-  const outDir = path.join(__dirname, '../frontend/out');
-  
-  console.log('Starting Frontend server...');
-  frontendProcess = spawn(servePath, ['-s', outDir, '-l', 'tcp://127.0.0.1:3000'], {
+  const nextPath = path.join(__dirname, '../frontend/node_modules', '.bin', 'next');
+  const frontendDir = path.join(__dirname, '../frontend');
+
+  console.log('Starting Next.js dev server...');
+  frontendProcess = spawn(nextPath, ['dev'], {
+    cwd: frontendDir,
     stdio: 'inherit'
   });
 }
