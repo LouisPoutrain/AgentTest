@@ -13,6 +13,7 @@ from app.tools.custom_tools import (
     calculate_text_length,
     web_search,
     read_file,
+    read_pdf,
     write_file,
     delete_path,
     execute_python_code,
@@ -23,6 +24,7 @@ from app.tools.custom_tools import (
     execute_entrypoint,
     improve_fn,
     list_directory,
+    list_pdfs,
     run_test_command,
     generate_archify_diagram,
     execute_crew,
@@ -34,6 +36,17 @@ from app.tools.custom_tools import (
     research_educational_resources,
     generate_educational_html,
     generate_educational_markdown,
+    # Outils PDF
+    read_pdf,
+    # Outils d'automatisation externe
+    search_scholar,
+    http_request,
+    # Outils de recherche généraliste
+    wikipedia_search,
+    arxiv_search,
+    web_scrape,
+    youtube_transcript,
+    generate_html_report,
 )
 
 # Instancier les nouveaux outils
@@ -44,6 +57,7 @@ AVAILABLE_TOOLS: dict[str, object] = {
     "calculate_text_length": calculate_text_length,
     "web_search": web_search,
     "read_file": read_file,
+    "read_pdf": read_pdf,
     "write_file": write_file,
     "delete_path": delete_path,
     "execute_python_code": execute_python_code,
@@ -54,6 +68,7 @@ AVAILABLE_TOOLS: dict[str, object] = {
     "execute_entrypoint": execute_entrypoint,
     "improve_fn": improve_fn,
     "list_directory": list_directory,
+    "list_pdfs": list_pdfs,
     "run_test_command": run_test_command,
     "generate_archify_diagram": generate_archify_diagram,
     "execute_crew": execute_crew,
@@ -68,6 +83,15 @@ AVAILABLE_TOOLS: dict[str, object] = {
     "research_educational_resources": research_educational_resources,
     "generate_educational_html": generate_educational_html,
     "generate_educational_markdown": generate_educational_markdown,
+    # Outils d'automatisation externe
+    "search_scholar": search_scholar,
+    "http_request": http_request,
+    # Outils de recherche généraliste
+    "wikipedia_search": wikipedia_search,
+    "arxiv_search": arxiv_search,
+    "web_scrape": web_scrape,
+    "youtube_transcript": youtube_transcript,
+    "generate_html_report": generate_html_report,
 }
 
 def get_tool_names() -> list[str]:

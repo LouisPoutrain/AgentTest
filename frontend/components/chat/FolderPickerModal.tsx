@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -30,14 +31,53 @@ import {
 import { getWorkspaceProjects, browseWorkspaceDirectory } from "@/lib/api";
 import type { ProjectInfo, BrowseResponse } from "@/lib/types";
 
-interface FolderPickerModalProps {
+/**
+ * Props for the FolderPickerModal component.
+ *
+ * @example
+ * // Basic usage with a callback
+ * <FolderPickerModal
+ *   isOpen={showModal}
+ *   onClose={() => setShowModal(false)}
+ *   onSelect={(path) => setSelectedFolder(path)}
+ *   title="Sélectionner un dossier"
+ * />
+ *
+ * @example
+ * // With a pre-selected path
+ * <FolderPickerModal
+ *   isOpen={true}
+ *   onClose={handleClose}
+ *   onSelect={handleSelect}
+ *   currentValue="./backend"
+ *   title="Choisir le backend"
+ * />
+ */
+export interface FolderPickerModalProps {
+  /** Whether the modal is currently visible. */
   isOpen: boolean;
+  /** Callback invoked when the user closes the modal without selecting. */
   onClose: () => void;
+  /** Callback invoked with the selected folder path when the user confirms. */
   onSelect: (path: string) => void;
+  /** Pre-selected folder path shown on open. Defaults to `"."`. */
   currentValue?: string;
+  /** Title displayed in the modal header. Defaults to `"Sélectionner un projet ou un dossier"`. */
   title?: string;
 }
 
+/**
+ * A modal dialog that lets the user select a folder path from three views:
+ * detected projects, a browsable directory tree, and recent/favorite paths.
+ *
+ * The component manages internal state for the active tab, search query,
+ * project list, browse directory data, and a local-storage–backed recents
+ * list. On confirm, the selected path is saved to recents and passed to
+ * the parent via `onSelect`.
+ *
+ * @param props - The component props.
+ * @returns A Dialog element with three tabbed panels for folder selection.
+ */
 export function FolderPickerModal({
   isOpen,
   onClose,
@@ -58,20 +98,19 @@ export function FolderPickerModal({
 
   // Selected path preview
   const [selectedPath, setSelectedPath] = useState(currentValue || ".");
-  const [recents, setRecents] = useState<string[]>([]);
-
-  // Load recents from localStorage
-  useEffect(() => {
+  const [recents, setRecents] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem("agenttest_recent_folders");
-      if (stored) {
-        setRecents(JSON.parse(stored));
-      }
+      return stored ? JSON.parse(stored) : [];
     } catch {
-      // Ignore
+      return [];
     }
-  }, []);
+  });
 
+  /**
+   * Saves a path to the recents list (persisted in localStorage, max 8 entries).
+   * @param path - The folder path to save as recent.
+   */
   const saveRecent = (path: string) => {
     try {
       const updated = [path, ...recents.filter((p) => p !== path)].slice(0, 8);
@@ -82,7 +121,40 @@ export function FolderPickerModal({
     }
   };
 
-  // Fetch projects on open
+  /**
+   * Fetches the list of workspace projects from the backend API.
+   */
+  const loadProjects = async () => {
+    setLoadingProjects(true);
+    try {
+      const list = await getWorkspaceProjects();
+      setProjects(list);
+    } catch (err: unknown) {
+      console.error("Failed to load projects", err);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  /**
+   * Fetches the directory listing for a given path from the backend API.
+   * @param path - The filesystem path to browse.
+   */
+  const loadBrowse = async (path: string) => {
+    setLoadingBrowse(true);
+    setBrowseError(null);
+    try {
+      const data = await browseWorkspaceDirectory(path);
+      setBrowseData(data);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erreur de lecture du dossier";
+      setBrowseError(msg);
+    } finally {
+      setLoadingBrowse(false);
+    }
+  };
+
+  // Fetch projects on open — sync external prop to internal state
   useEffect(() => {
     if (isOpen) {
       setSelectedPath(currentValue || ".");
@@ -91,18 +163,6 @@ export function FolderPickerModal({
     }
   }, [isOpen, currentValue]);
 
-  const loadProjects = async () => {
-    setLoadingProjects(true);
-    try {
-      const list = await getWorkspaceProjects();
-      setProjects(list);
-    } catch (err) {
-      console.error("Failed to load projects", err);
-    } finally {
-      setLoadingProjects(false);
-    }
-  };
-
   // Load browse directory data
   useEffect(() => {
     if (isOpen && activeTab === "browse") {
@@ -110,19 +170,10 @@ export function FolderPickerModal({
     }
   }, [isOpen, activeTab, browsePath]);
 
-  const loadBrowse = async (path: string) => {
-    setLoadingBrowse(true);
-    setBrowseError(null);
-    try {
-      const data = await browseWorkspaceDirectory(path);
-      setBrowseData(data);
-    } catch (err: any) {
-      setBrowseError(err.message || "Erreur de lecture du dossier");
-    } finally {
-      setLoadingBrowse(false);
-    }
-  };
-
+  /**
+   * Filters the projects list by the current search query, matching
+   * against name, path, framework, and tags.
+   */
   const filteredProjects = useMemo(() => {
     if (!searchQuery.trim()) return projects;
     const q = searchQuery.toLowerCase().trim();
@@ -135,6 +186,11 @@ export function FolderPickerModal({
     );
   }, [projects, searchQuery]);
 
+  /**
+   * Confirms the current selection: saves to recents, calls `onSelect`,
+   * and closes the modal.
+   * @param pathToUse - Optional explicit path to confirm; falls back to `selectedPath`.
+   */
   const handleConfirm = (pathToUse?: string) => {
     const finalPath = pathToUse || selectedPath;
     if (finalPath) {
@@ -144,6 +200,11 @@ export function FolderPickerModal({
     }
   };
 
+  /**
+   * Maps a framework name to a Tailwind CSS color class string for badge styling.
+   * @param fw - The framework identifier string (e.g. "next", "fastapi", "react").
+   * @returns A Tailwind class string for the badge background, text, and border.
+   */
   const getFrameworkColor = (fw: string) => {
     const lower = fw.toLowerCase();
     if (lower.includes("next")) return "bg-blue-500/10 text-blue-400 border-blue-500/30";
@@ -156,20 +217,20 @@ export function FolderPickerModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden bg-bg-secondary border-border/80 shadow-2xl">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden bg-bg-primary border-border shadow-xl">
         {/* Header */}
-        <DialogHeader className="p-5 pb-3 border-b border-border/60 shrink-0">
+        <DialogHeader className="p-5 pb-3 border-b border-border shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent shadow-inner">
-                <FolderOpen className="h-5 w-5" />
+              <div className="h-9 w-9 rounded-lg bg-accent-subtle border border-accent/20 flex items-center justify-center text-accent">
+                <FolderOpen className="h-4.5 w-4.5" />
               </div>
               <div>
-                <DialogTitle className="text-lg font-bold text-text-primary flex items-center gap-2">
+                <DialogTitle className="text-base font-semibold text-text-primary flex items-center gap-2">
                   {title}
                 </DialogTitle>
-                <DialogDescription className="text-xs text-text-secondary">
-                  Sélectionnez un projet détecté ou naviguez librement dans l'arborescence
+                <DialogDescription className="text-[11px] text-text-tertiary">
+                  Sélectionnez un projet détecté ou naviguez dans l{'’'}arborescence
                 </DialogDescription>
               </div>
             </div>
@@ -177,9 +238,9 @@ export function FolderPickerModal({
               variant="ghost"
               size="sm"
               onClick={loadProjects}
-              className="h-8 text-xs text-text-secondary hover:text-text-primary gap-1.5"
+              className="h-7 text-[11px] text-text-tertiary hover:text-text-primary gap-1.5"
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${loadingProjects ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-3 w-3 ${loadingProjects ? "animate-spin" : ""}`} />
               Actualiser
             </Button>
           </div>
@@ -187,28 +248,28 @@ export function FolderPickerModal({
           {/* Navigation Tabs */}
           <Tabs
             value={activeTab}
-            onValueChange={(v) => setActiveTab(v as any)}
+            onValueChange={(v) => setActiveTab(v as "projects" | "browse" | "recents")}
             className="w-full mt-3"
           >
-            <TabsList className="grid grid-cols-3 w-full bg-bg-tertiary/70 border border-border/50">
-              <TabsTrigger value="projects" className="gap-2 text-xs">
-                <Sparkles className="h-3.5 w-3.5 text-accent" />
-                Projets Détectés ({projects.length})
+            <TabsList className="grid grid-cols-3 w-full bg-bg-secondary border border-border/60">
+              <TabsTrigger value="projects" className="gap-1.5 text-[11px]">
+                <Sparkles className="h-3 w-3 text-accent" />
+                Projets ({projects.length})
               </TabsTrigger>
-              <TabsTrigger value="browse" className="gap-2 text-xs">
-                <Folder className="h-3.5 w-3.5 text-blue-400" />
-                Explorateur de dossiers
+              <TabsTrigger value="browse" className="gap-1.5 text-[11px]">
+                <Folder className="h-3 w-3 text-accent" />
+                Explorateur
               </TabsTrigger>
-              <TabsTrigger value="recents" className="gap-2 text-xs">
-                <History className="h-3.5 w-3.5 text-amber-400" />
-                Raccourcis & Récents
+              <TabsTrigger value="recents" className="gap-1.5 text-[11px]">
+                <History className="h-3 w-3 text-accent" />
+                Récents
               </TabsTrigger>
             </TabsList>
           </Tabs>
         </DialogHeader>
 
         {/* Content Body */}
-        <div className="flex-1 min-h-0 p-5 pt-3 overflow-hidden">
+        <div className="flex-1 min-h-0 p-4 pt-3 overflow-hidden">
           {/* TAB 1: PROJETS DÉTECTÉS */}
           {activeTab === "projects" && (
             <div className="flex flex-col h-full gap-3">
@@ -216,10 +277,10 @@ export function FolderPickerModal({
               <div className="relative shrink-0">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-text-secondary/60" />
                 <Input
-                  placeholder="Rechercher un projet par nom, stack ou tag (ex: mon_projet, Next.js, Prisma)..."
+                  placeholder="Rechercher un projet par nom, stack ou tag..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 bg-bg-tertiary/60 border-border/60 text-xs h-9"
+                  className="pl-9 bg-bg-secondary/60 border-border/60 text-xs h-8"
                 />
                 {searchQuery && (
                   <button
@@ -243,7 +304,7 @@ export function FolderPickerModal({
                     <Folder className="h-8 w-8 text-text-secondary/40" />
                     <span className="text-sm font-medium">Aucun projet correspondant</span>
                     <span className="text-xs text-center text-text-secondary/80">
-                      Essayez un autre mot-clé ou basculez vers l'onglet "Explorateur de dossiers".
+                      Essayez un autre mot-clé ou basculez vers l{'’'}onglet &quot;Explorateur de dossiers&quot;.
                     </span>
                   </div>
                 ) : (
@@ -538,33 +599,33 @@ export function FolderPickerModal({
         </div>
 
         {/* Footer with Selected Path Confirmation */}
-        <DialogFooter className="p-4 bg-bg-tertiary/60 border-t border-border/60 flex flex-row items-center justify-between sm:justify-between gap-3 shrink-0">
+        <DialogFooter className="p-4 bg-bg-secondary/50 border-t border-border/60 flex flex-row items-center justify-between sm:justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <span className="text-xs text-text-secondary shrink-0 font-medium">Dossier sélectionné :</span>
-            <div className="flex items-center gap-1.5 bg-bg-primary px-3 py-1.5 rounded-lg border border-border text-xs font-mono text-text-primary truncate flex-1 shadow-inner">
-              <Folder className="h-3.5 w-3.5 text-accent shrink-0" />
+            <span className="text-[11px] text-text-tertiary shrink-0 font-medium">Dossier :</span>
+            <div className="flex items-center gap-1.5 bg-bg-tertiary/60 px-2.5 py-1 rounded-md border border-border/60 text-[11px] font-mono text-text-primary truncate flex-1">
+              <Folder className="h-3 w-3 text-accent shrink-0" />
               <input
                 type="text"
                 value={selectedPath}
                 onChange={(e) => setSelectedPath(e.target.value)}
-                className="bg-transparent border-none outline-none text-xs font-mono w-full text-text-primary"
-                placeholder="Ex: ../mon_projetw ou ."
+                className="bg-transparent border-none outline-none text-[11px] font-mono w-full text-text-primary"
+                placeholder="Ex: ../mon_projet ou ."
               />
             </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <Button variant="ghost" size="sm" onClick={onClose} className="h-9 text-xs">
+            <Button variant="ghost" size="sm" onClick={onClose} className="h-8 text-[11px]">
               Annuler
             </Button>
             <Button
               size="sm"
               onClick={() => handleConfirm()}
               disabled={!selectedPath.trim()}
-              className="h-9 px-4 text-xs font-semibold bg-accent hover:bg-accent/90 text-white gap-1.5 shadow-md shadow-accent/20"
+              className="h-8 px-4 text-[11px] font-semibold bg-accent hover:bg-accent-hover text-white gap-1.5"
             >
-              <Check className="h-4 w-4" />
-              Valider ce dossier
+              <Check className="h-3.5 w-3.5" />
+              Valider
             </Button>
           </div>
         </DialogFooter>

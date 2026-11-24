@@ -1,9 +1,21 @@
+# dev_assistant.yaml — General-purpose development assistant
+#
+# Purpose: Full-stack development assistance — reads, writes, and executes code.
+#          Navigates projects, understands code, modifies files, runs tests,
+#          and resolves bugs. Uses file_editor and terminal_runner tools.
+#
+# Usage: POST /api/chat with crew_name: "dev_assistant"
+# LLM: Configured via openai/ prefix (set default model in .env)
+# Process: Sequential — single agent works step by step
+# Memory: Enabled — agent retains experience across tasks
+# Rate limit: 20 requests/minute
+
 # Configuration pour un agent assistant de développement (type Claude Code)
 
 crew_settings:
-  process: "Séquentiel"
-  memory: true
-  max_rpm: 20
+  process: "Séquentiel"    # Agents work in sequence (vs "Hiérarchique" for manager delegation)
+  memory: true              # Enable CrewAI experience memory
+  max_rpm: 20               # Max LLM requests per minute (0 = unlimited)
 
 agents:
   - name: "DevAssistant"
@@ -11,13 +23,13 @@ agents:
     goal: "Aider l'utilisateur à gérer son projet en lisant, écrivant et exécutant du code. Analyser les erreurs et proposer des solutions."
     backstory: "Vous êtes un assistant de développement autonome capable de naviguer dans un projet, de comprendre le code, de modifier des fichiers, d'exécuter des tests et de résoudre les bugs. Vous utilisez des outils pour interagir avec le système de fichiers et le terminal."
     llm: "gemini/gemini-2.5-flash"
-    tools:
-      - file_editor
-      - terminal_runner
+    tools:                  # Available tools from the registry
+      - file_editor         # Advanced file editing with diff-based changes
+      - terminal_runner     # Sandbox command execution
     verbose: true
     allow_delegation: false
 
 tasks:
   - description: "Analyser la demande de l'utilisateur et déterminer les actions nécessaires (lecture de fichiers, exécution de commandes, etc.)."
     expected_output: "Une liste d'étapes à suivre pour répondre à la demande de l'utilisateur."
-    agent: "DevAssistant"
+    agent: "DevAssistant"   # References the agent defined above

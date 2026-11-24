@@ -1,5 +1,5 @@
 .venv/
-.env 
+.env
 *.env
 __pycache__/
 backend/.venv/
@@ -9,10 +9,32 @@ frontend/.next/
 frontend/.env.local
 *.log
 *.pid
-backend/logs/
+logs/
 .aider*
 .DS_Store
 analyse_temp/
 *.db
 desktop/node_modules/
 desktop/dist/
+
+# Root-level node_modules (accidental install)
+node_modules/
+package.json
+package-lock.json
+
+# Other AI tool configs (not project files)
+.claude/
+.claudeignore
+.codex/
+.agents/
+
+# Test artifacts & reports
+frontend/playwright-report/
+frontend/test-results/
+*.zip
+
+# Temporary scripts & test folders
+Test simple/
+lab1-workflow.mjs
+run_swo_course.py
+frontend/test_script.sh

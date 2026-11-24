@@ -2,32 +2,26 @@
 core/crew_manager.py — Gestion CRUD des Crews (sans aucune dépendance UI).
 
 Fonctions pour lister, charger, créer, supprimer des Crews,
-ajouter des agents/tâches, importer depuis GitHub, et lister les modèles Gemini.
+ajouter des agents/tâches, importer depuis GitHub, et lister les modèles disponibles.
 """
 
 from __future__ import annotations
 
 import json
+import logging
 import os
+import threading
 import urllib.request
 from pathlib import Path
 from typing import Any
 
 import yaml
-import google.generativeai as genai
-
+from app.core.config import CREWS_DIR
 from app.core.git_importer import download_yaml_from_github
 
-# ── Configuration ────────────────────────────────────────────────────────────
-
-CREWS_DIR = Path(__file__).resolve().parent.parent.parent / "config" / "crews"
-CREWS_DIR.mkdir(parents=True, exist_ok=True)
-
 DEFAULT_MODELS = [
-    "gemini/gemini-2.5-flash",
-    "gemini/gemini-2.5-pro",
-    "gemini/gemini-1.5-flash",
-    "gemini/gemini-1.5-pro",
+    "openai/qwen-3.6-35b-instruct",
+    "openai/gpt-4o",
 ]
 
 
@@ -188,69 +182,57 @@ def import_from_github(raw_url: str, crew_name: str) -> dict[str, Any]:
     return get_crew(crew_name)
 
 
-# ── Modèles Gemini ──────────────────────────────────────────────────────────
+# ── Modèles disponibles ──────────────────────────────────────────────────────
 
 _models_cache: list[str] | None = None
+_models_lock = threading.Lock()
 
 
 def get_available_models() -> list[str]:
-    """Récupère dynamiquement les modèles Gemini, Ollama et Custom (LLM_BASE_URL)."""
+    """Récupère dynamiquement les modèles Ollama et Custom (LLM_BASE_URL)."""
     global _models_cache
-    if _models_cache is not None:
-        return _models_cache
+    with _models_lock:
+        if _models_cache is not None:
+            return _models_cache
 
-    models = []
+        models: list[str] = []
 
-    # 1. Récupération des modèles locaux Ollama
-    try:
-        req = urllib.request.Request("http://localhost:11434/api/tags", method="GET")
-        with urllib.request.urlopen(req, timeout=1.0) as response:
-            if response.status == 200:
-                data = json.loads(response.read().decode("utf-8"))
-                for m in data.get("models", []):
-                    name = m.get("name")
-                    if name:
-                        models.append(f"ollama/{name}")
-    except Exception:
-        pass  # Ollama non disponible, on ignore silencieusement
-
-    # 2. Récupération des modèles Custom (LLM_BASE_URL)
-    llm_base_url = os.getenv("LLM_BASE_URL")
-    llm_api_key = os.getenv("LLM_API_KEY")
-    if llm_base_url and llm_api_key:
+        # 1. Récupération des modèles locaux Ollama
         try:
-            req = urllib.request.Request(f"{llm_base_url}/models", method="GET")
-            req.add_header("Authorization", f"Bearer {llm_api_key}")
-            with urllib.request.urlopen(req, timeout=2.0) as response:
+            req = urllib.request.Request("http://localhost:11434/api/tags", method="GET")
+            with urllib.request.urlopen(req, timeout=1.0) as response:
                 if response.status == 200:
                     data = json.loads(response.read().decode("utf-8"))
-                    for m in data.get("data", []):
-                        name = m.get("id")
+                    for m in data.get("models", []):
+                        name = m.get("name")
                         if name:
-                            models.append(f"openai/{name}")
-        except Exception:
-            pass
+                            models.append(f"ollama/{name}")
+        except Exception as e:
+            logging.warning("Ollama fetch failed: %s", e)
 
-    # 3. Récupération des modèles Gemini
-    api_key = os.getenv("GEMINI_API_KEY")
-    if api_key:
-        try:
-            genai.configure(api_key=api_key)
-            gemini_models = genai.list_models()
-            models.extend([
-                f"gemini/{m.name.replace('models/', '')}"
-                for m in gemini_models
-                if "generateContent" in m.supported_generation_methods
-            ])
-        except Exception:
-            pass
+        # 2. Récupération des modèles Custom (LLM_BASE_URL)
+        llm_base_url = os.getenv("LLM_BASE_URL")
+        llm_api_key = os.getenv("LLM_API_KEY")
+        if llm_base_url and llm_api_key:
+            try:
+                req = urllib.request.Request(f"{llm_base_url}/models", method="GET")
+                req.add_header("Authorization", f"Bearer {llm_api_key}")
+                with urllib.request.urlopen(req, timeout=2.0) as response:
+                    if response.status == 200:
+                        data = json.loads(response.read().decode("utf-8"))
+                        for m in data.get("data", []):
+                            name = m.get("id")
+                            if name:
+                                models.append(f"openai/{name}")
+            except Exception as e:
+                logging.warning("Custom LLM fetch failed: %s", e)
 
-    # Fallback si rien n'est trouvé
-    if not models:
-        models = DEFAULT_MODELS
+        # Fallback si rien n'est trouvé
+        if not models:
+            models = DEFAULT_MODELS
 
-    _models_cache = models
-    return _models_cache
+        _models_cache = models
+        return _models_cache
 
 
 # ── Helpers privés ───────────────────────────────────────────────────────────

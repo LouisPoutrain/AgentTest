@@ -8,7 +8,7 @@ from typing import Optional
 
 from crewai.tools import BaseTool
 
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
+from app.core.config import PROJECT_ROOT
 
 
 class TerminalRunnerTool(BaseTool):

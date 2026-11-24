@@ -6,8 +6,39 @@ import { Select as SelectPrimitive } from "@base-ui/react/select"
 import { cn } from "@/lib/utils"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
 
+/**
+ * The root Select component that groups all select parts.
+ *
+ * Wraps `SelectPrimitive.Root` and exposes it as a named export.
+ * Does not render its own HTML element; it is a logical container
+ * for `SelectTrigger`, `SelectContent`, `SelectGroup`, etc.
+ *
+ * @example
+ * ```tsx
+ * <Select value={font} onValueChange={setFont}>
+ *   <SelectTrigger size="default">
+ *     <SelectValue />
+ *   </SelectTrigger>
+ *   <SelectContent>
+ *     <SelectItem value="sans">Sans-serif</SelectItem>
+ *     <SelectItem value="serif">Serif</SelectItem>
+ *     <SelectItem value="mono">Monospace</SelectItem>
+ *   </SelectContent>
+ * </Select>
+ * ```
+ */
 const Select = SelectPrimitive.Root
 
+/**
+ * A group container for related `SelectItem` elements.
+ *
+ * Renders a `<div>` element with `data-slot="select-group"`.
+ * Typically used to wrap a set of items that belong together.
+ *
+ * @param className - Additional CSS classes applied to the group container.
+ * @param props - Additional props forwarded to the underlying `SelectPrimitive.Group`.
+ * @returns A grouped select region containing child items.
+ */
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (
     <SelectPrimitive.Group
@@ -18,6 +49,24 @@ function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   )
 }
 
+/**
+ * Displays the currently selected item's value or label inside the trigger.
+ *
+ * Renders a `<span>` element with `data-slot="select-value"`.
+ * When the parent `Select` has an `items` prop, it renders the label
+ * of the selected item. Without `items`, it renders the raw value.
+ *
+ * @param className - Additional CSS classes applied to the value span.
+ * @param props - Additional props forwarded to the underlying `SelectPrimitive.Value`.
+ * @returns A span showing the selected value, styled with left-aligned text.
+ *
+ * @example
+ * ```tsx
+ * <SelectTrigger>
+ *   <SelectValue placeholder="Choose an option..." />
+ * </SelectTrigger>
+ * ```
+ */
 function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   return (
     <SelectPrimitive.Value
@@ -28,6 +77,27 @@ function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   )
 }
 
+/**
+ * The button that opens the select popup.
+ *
+ * Renders a `<button>` element with `data-slot="select-trigger"`.
+ * Supports two sizes (`"sm"` and `"default"`) and applies focus,
+ * disabled, and placeholder styling automatically. Includes a chevron
+ * icon that indicates the dropdown state.
+ *
+ * @param className - Additional CSS classes applied to the trigger button.
+ * @param size - Visual size of the trigger. `"sm"` is 28px tall, `"default"` is 32px.
+ * @param children - Content rendered inside the trigger (typically `SelectValue`).
+ * @param props - Additional props forwarded to the underlying `SelectPrimitive.Trigger`.
+ * @returns A styled trigger button that opens the select popup on click or keyboard.
+ *
+ * @example
+ * ```tsx
+ * <SelectTrigger size="sm" className="w-40">
+ *   <SelectValue placeholder="Select..." />
+ * </SelectTrigger>
+ * ```
+ */
 function SelectTrigger({
   className,
   size = "default",
@@ -56,6 +126,31 @@ function SelectTrigger({
   )
 }
 
+/**
+ * The floating popup that contains the list of select items.
+ *
+ * Renders a portal with a positioner and the popup `<div>`. Handles
+ * positioning relative to the trigger, scroll arrows, and open/close
+ * animations. The popup is scrollable and matches the trigger width.
+ *
+ * @param className - Additional CSS classes applied to the popup element.
+ * @param children - The list of items and optional labels to render inside the popup.
+ * @param side - Which side of the trigger to position the popup. Defaults to `"bottom"`.
+ * @param sideOffset - Distance in pixels between the trigger and the popup. Defaults to `4`.
+ * @param align - Horizontal alignment of the popup relative to the trigger. Defaults to `"center"`.
+ * @param alignOffset - Additional offset in pixels along the alignment axis. Defaults to `0`.
+ * @param alignItemWithTrigger - Whether to overlap the popup with the trigger for text alignment. Defaults to `true`.
+ * @param props - Additional props forwarded to the underlying `SelectPrimitive.Popup`.
+ * @returns A positioned floating popup containing select items with scroll arrows.
+ *
+ * @example
+ * ```tsx
+ * <SelectContent side="bottom" align="start">
+ *   <SelectItem value="a">Option A</SelectItem>
+ *   <SelectItem value="b">Option B</SelectItem>
+ * </SelectContent>
+ * ```
+ */
 function SelectContent({
   className,
   children,
@@ -95,6 +190,27 @@ function SelectContent({
   )
 }
 
+/**
+ * An accessible label for a group of select items.
+ *
+ * Renders a `<div>` element with `data-slot="select-label"`.
+ * The label is visually styled as muted, small text and is
+ * not selectable as an item.
+ *
+ * @param className - Additional CSS classes applied to the label element.
+ * @param props - Additional props forwarded to the underlying `SelectPrimitive.GroupLabel`.
+ * @returns A non-interactive label div for a select group.
+ *
+ * @example
+ * ```tsx
+ * <SelectContent>
+ *   <SelectGroup>
+ *     <SelectLabel>Font Family</SelectLabel>
+ *     <SelectItem value="sans">Sans</SelectItem>
+ *   </SelectGroup>
+ * </SelectContent>
+ * ```
+ */
 function SelectLabel({
   className,
   ...props
@@ -108,6 +224,26 @@ function SelectLabel({
   )
 }
 
+/**
+ * An individual selectable option within the select popup.
+ *
+ * Renders a `<div>` element with `data-slot="select-item"`. Displays
+ * the item text with a check indicator when selected. Supports disabled
+ * state and applies focus/hover styling automatically.
+ *
+ * @param className - Additional CSS classes applied to the item element.
+ * @param children - The display text for this option.
+ * @param props - Additional props forwarded to the underlying `SelectPrimitive.Item`, including `value` and `disabled`.
+ * @returns A selectable item row with text and optional check indicator.
+ *
+ * @example
+ * ```tsx
+ * <SelectContent>
+ *   <SelectItem value="light">Light</SelectItem>
+ *   <SelectItem value="dark" disabled>Dark (unavailable)</SelectItem>
+ * </SelectContent>
+ * ```
+ */
 function SelectItem({
   className,
   children,
@@ -136,6 +272,25 @@ function SelectItem({
   )
 }
 
+/**
+ * A visual separator line between groups or sections of items.
+ *
+ * Renders a `<div>` element with `data-slot="select-separator"`.
+ * Draws a horizontal rule with standard border styling.
+ *
+ * @param className - Additional CSS classes applied to the separator element.
+ * @param props - Additional props forwarded to the underlying `SelectPrimitive.Separator`.
+ * @returns A horizontal divider line within the select popup.
+ *
+ * @example
+ * ```tsx
+ * <SelectContent>
+ *   <SelectItem value="a">Option A</SelectItem>
+ *   <SelectSeparator />
+ *   <SelectItem value="b">Option B</SelectItem>
+ * </SelectContent>
+ * ```
+ */
 function SelectSeparator({
   className,
   ...props
@@ -149,6 +304,17 @@ function SelectSeparator({
   )
 }
 
+/**
+ * A scroll button that appears at the top of the select popup.
+ *
+ * Renders a `<div>` with an up-arrow chevron icon. Visible only when
+ * the list content overflows above the viewport. Hovering scrolls the
+ * list upward. Does not render on touch devices.
+ *
+ * @param className - Additional CSS classes applied to the scroll button element.
+ * @param props - Additional props forwarded to the underlying `SelectPrimitive.ScrollUpArrow`.
+ * @returns A scroll-up button that appears when content overflows upward.
+ */
 function SelectScrollUpButton({
   className,
   ...props
@@ -168,6 +334,17 @@ function SelectScrollUpButton({
   )
 }
 
+/**
+ * A scroll button that appears at the bottom of the select popup.
+ *
+ * Renders a `<div>` with a down-arrow chevron icon. Visible only when
+ * the list content overflows below the viewport. Hovering scrolls the
+ * list downward. Does not render on touch devices.
+ *
+ * @param className - Additional CSS classes applied to the scroll button element.
+ * @param props - Additional props forwarded to the underlying `SelectPrimitive.ScrollDownArrow`.
+ * @returns A scroll-down button that appears when content overflows downward.
+ */
 function SelectScrollDownButton({
   className,
   ...props

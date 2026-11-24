@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function getCrewDescription(crewName: string, crewDetail?: any): string {
+export function getCrewDescription(crewName: string, crewDetail?: { agents?: { goal?: string }[] }): string {
   const lower = (crewName || "").toLowerCase().trim();
 
   if (lower.includes("project_architect") || lower.includes("architect") || lower.includes("ideator")) {

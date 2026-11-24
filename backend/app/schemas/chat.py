@@ -12,6 +12,8 @@ class ChatRequest(BaseModel):
 
     session_id: str | None = Field(default=None, description="ID de la session (si None, une nouvelle sera créée)")
     crew_name: str | None = Field(default=None, max_length=100, description="Nom du Crew à exécuter (si None, le routeur décide)")
+    crew_names: list[str] | None = Field(default=None, description="Liste des Crews à exécuter en mode multi-crew")
+    execution_mode: Literal["sequential", "parallel"] | None = Field(default="sequential", description="Mode d'exécution pour le multi-crew")
     message: str = Field(default="", max_length=10000, description="Message de l'utilisateur pour le Crew (si prompt unique)")
     inputs: dict[str, Any] | None = Field(default=None, description="Dictionnaire des variables/paramètres dynamiques pour le Crew")
     max_rpm: int = Field(default=15, ge=1, le=100, description="Limite de requêtes par minute")

@@ -1,0 +1,41 @@
+# IntegrationTestCrew.yaml — Integration test crew
+#
+# Purpose: Runs integration tests on code. Currently a minimal skeleton crew
+#          with a single TestAgent. Intended for future expansion with
+#          test scenario design, execution, and reporting tasks.
+#
+# Usage: POST /api/chat with crew_name: "IntegrationTestCrew"
+# LLM: Configured via openai/ prefix (set default model in .env)
+# Process: Hierarchical — manager delegates to sub-agents
+# Memory: Disabled
+# Rate limit: 50 requests/minute (higher limit for test execution)
+
+# IntegrationTestCrew.yaml — Integration test crew
+#
+# Purpose: Runs integration tests on code. Currently a minimal skeleton crew
+#          with a single TestAgent. Intended for future expansion with
+#          test scenario design, execution, and reporting tasks.
+#
+# Usage: POST /api/chat with crew_name: "IntegrationTestCrew"
+# LLM: Configured via openai/ prefix (set default model in .env)
+# Process: Hierarchical — manager delegates to sub-agents
+# Memory: Disabled
+# Rate limit: 50 requests/minute (higher limit for test execution)
+
+crew_settings:
+  process: "Hiérarchique"    # Manager agent delegates tasks to sub-agents
+  memory: false              # Tests are stateless — no memory needed              # Tests are stateless — no memory needed
+  max_rpm: 50                # Higher rate limit to allow rapid test execution                # Higher rate limit to allow rapid test execution
+
+agents:
+- name: "TestAgent"
+  role: "Testeur"
+  goal: "Tester le code"
+  backstory: "Un agent de test"
+  llm: "openai/"             # LiteLLM model prefix — set default in .env
+  tools:
+  - read_file                # Read source files to understand what to test                # Read source files to understand what to test
+  verbose: true
+  allow_delegation: false
+
+tasks: []                    # No tasks defined yet — crew is a skeleton                    # No tasks defined yet — crew is a skeleton

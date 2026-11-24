@@ -3,8 +3,23 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
+/**
+ * Defines the visual variants and sizes for the Button component using
+ * class-variance-authority (CVA). Each variant maps to a set of Tailwind CSS
+ * utility classes that control appearance, hover states, and accessibility.
+ *
+ * @example
+ * // Default button
+ * buttonVariants({ variant: "default", size: "default" })
+ *
+ * // Destructive action button
+ * buttonVariants({ variant: "destructive", size: "sm" })
+ *
+ * // Icon-only button
+ * buttonVariants({ variant: "ghost", size: "icon" })
+ */
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all duration-200 ease-in-out outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:scale-[1.02] active:scale-[0.98]",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all duration-200 ease-out outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -12,14 +27,14 @@ const buttonVariants = cva(
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+          "bg-bg-secondary text-text-primary border-border hover:bg-bg-tertiary hover:text-text-primary",
         ghost:
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
+          "bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50",
         link: "text-primary underline-offset-4 hover:underline",
-        // Nouvelles variantes personnalisées
-        "agent-primary": "bg-accent-custom text-white hover:bg-accent-hover shadow-md hover:shadow-lg",
+        // Warm & Cozy custom variants
+        "agent-primary": "bg-accent hover:bg-accent-hover text-white shadow-sm hover:shadow-md",
         "agent-secondary": "bg-bg-secondary text-text-primary border-border hover:bg-bg-tertiary",
       },
       size: {
@@ -40,12 +55,46 @@ const buttonVariants = cva(
   }
 );
 
+/**
+ * Props for the Button component. Extends standard HTML button attributes
+ * with CVA variant/size props and an optional asChild prop for composition
+ * with Radix UI Slot.
+ */
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
+  /** When true, renders the button as its child component instead of a native `<button>` element. Useful for composing with Next.js Link or Radix UI primitives. */
   asChild?: boolean;
 }
 
+/**
+ * A versatile, accessible button component built with Radix UI Slot and
+ * class-variance-authority for variant/size theming.
+ *
+ * Supports all standard HTML button attributes plus CVA-based visual variants
+ * and sizes. Use `asChild` to compose with Next.js Link or other Radix UI
+ * components without adding an extra DOM node.
+ *
+ * @example
+ * // Basic usage
+ * <Button onClick={handleClick}>Click me</Button>
+ *
+ * // Destructive action with custom size
+ * <Button variant="destructive" size="sm">Delete</Button>
+ *
+ * // Composed with Next.js Link (asChild)
+ * <Link href="/dashboard">
+ *   <Button asChild>Dashboard</Button>
+ * </Link>
+ *
+ * @example
+ * // Icon-only button
+ * <Button variant="ghost" size="icon" aria-label="Settings">
+ *   <SettingsIcon />
+ * </Button>
+ *
+ * @template T - The HTML element type (defaults to HTMLButtonElement)
+ */
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
@@ -60,4 +109,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 Button.displayName = "Button";
 
+/**
+ * The Button component — a styled, accessible button supporting variants,
+ * sizes, and composition via Radix UI Slot.
+ *
+ * @example
+ * <Button variant="default" size="default">Submit</Button>
+ *
+ * @returns A `<button>` element (or child component when `asChild` is true)
+ * with applied variant/size classes and standard button semantics.
+ */
 export { Button, buttonVariants };

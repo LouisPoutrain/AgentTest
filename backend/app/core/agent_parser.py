@@ -132,6 +132,10 @@ def create_tasks_from_yaml(
     L'objet Agent correspondant est retrouvé dans *agents_list* via
     le mapping ``name → Agent`` construit à partir du YAML.
 
+    En mode séquentiel, chaque tâche reçoit automatiquement le résultat
+    de la tâche précédente comme ``context``, ce qui permet aux agents
+    de lire les fichiers produits par les agents précédents.
+
     Parameters
     ----------
     yaml_path:
@@ -166,7 +170,7 @@ def create_tasks_from_yaml(
             name_to_agent[agent_name] = agents_list[i]
 
     tasks: list[Task] = []
-    for task_cfg in task_configs:
+    for idx, task_cfg in enumerate(task_configs):
         agent_name = task_cfg.get("agent")
         if agent_name not in name_to_agent:
             raise ValueError(
@@ -175,13 +179,21 @@ def create_tasks_from_yaml(
                 f"Agents disponibles : {list(name_to_agent.keys())}"
             )
 
-        tasks.append(
-            Task(
-                description=task_cfg["description"],
-                expected_output=task_cfg["expected_output"],
-                agent=name_to_agent[agent_name],
-            )
+        # En mode séquentiel, chaque tâche (sauf la première) reçoit
+        # le résultat de la précédente comme contexte explicite.
+        # Cela permet aux agents de lire les fichiers produits par
+        # les agents précédents sans dépendre uniquement de la description.
+        context_tasks: list[Task] | None = None
+        if idx > 0 and tasks:
+            context_tasks = [tasks[idx - 1]]
+
+        task = Task(
+            description=task_cfg["description"],
+            expected_output=task_cfg["expected_output"],
+            agent=name_to_agent[agent_name],
+            context=context_tasks,
         )
+        tasks.append(task)
 
     return tasks
 

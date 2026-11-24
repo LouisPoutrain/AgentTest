@@ -1,4 +1,15 @@
-/* ── TypeScript types for AgentTest frontend ── */
+/* ── TypeScript types for AgentTest frontend ──
+ *
+ * Data contracts shared between the Next.js frontend and the FastAPI backend.
+ * These interfaces mirror the Pydantic schemas in backend/app/schemas/ and
+ * the SSE chunk format produced by backend/app/api/chat.py.
+ *
+ * Key contracts:
+ * - ChatMessage / Conversation: persisted in localStorage (key: "agenttest_conversations")
+ * - SSEChunk: matches the JSON payload from the SSE stream (type field determines rendering)
+ * - CrewDetail / AgentConfig / TaskConfig: loaded from YAML via /api/crews endpoints
+ * - ProjectInfo / BrowseResponse: returned by /api/workspace endpoints
+ */
 
 export interface ChatMessage {
   id: string;
@@ -11,6 +22,8 @@ export interface ChatMessage {
 export interface Conversation {
   id: string;
   crewName: string;
+  crewNames?: string[];
+  executionMode?: "sequential" | "parallel";
   messages: ChatMessage[];
   createdAt: string;
   title: string;
@@ -48,22 +61,32 @@ export interface TaskConfig {
 }
 
 export interface SSEChunk {
-  type: "log" | "result" | "error";
+  type: "log" | "result" | "error" | "step" | "metrics" | "session_info";
   content: string;
   timestamp: string;
   code?: number;
   available_models?: string[];
   stepStatus?: string;
   stepKey?: string;
+  status?: string;
   tokens?: number;
   cost?: number;
+  crewName?: string;
+  log?: string;
 }
 
 export interface StreamChatOptions {
   message?: string;
-  inputs?: Record<string, any>;
+  inputs?: Record<string, unknown>;
   max_rpm?: number;
   llm_override?: string | null;
+}
+
+export interface CrewPipelineStep {
+  crewName: string;
+  status: "pending" | "running" | "completed" | "error";
+  tokens?: number;
+  cost?: number;
 }
 
 export interface CrewLaunchField {

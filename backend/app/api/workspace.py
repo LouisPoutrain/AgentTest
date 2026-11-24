@@ -2,19 +2,28 @@
 
 from __future__ import annotations
 
-import os
 import json
+import logging
+import os
 import time
 from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
+from app.core.config import PROJECT_ROOT
+
 router = APIRouter(prefix="/api/workspace", tags=["workspace"])
 
-# Déterminer la racine de travail (dossier parent contenant les projets)
-CURRENT_PROJECT_ROOT = Path(__file__).resolve().parents[3]
-WORKSPACE_ROOT = Path(os.environ.get("WORKSPACE_ROOT", Path(__file__).resolve().parents[4]))
+# Racine du projet courant (dossier contenant ce fichier backend/ et frontend/)
+# En mode production (.env), PROJECT_ROOT = Code/ → on prend AgentTest/
+# En mode test (pas de .env), PROJECT_ROOT = AgentTest/ → on l'utilise directement
+_candidate = PROJECT_ROOT / "AgentTest"
+if _candidate.is_dir() and (_candidate / "backend").is_dir():
+    CURRENT_PROJECT_ROOT = _candidate
+else:
+    CURRENT_PROJECT_ROOT = PROJECT_ROOT
+WORKSPACE_ROOT = PROJECT_ROOT.parent
 
 
 class ProjectInfo(BaseModel):
@@ -105,13 +114,13 @@ def _detect_stack(dir_path: Path) -> tuple[str, list[str]]:
         if req_file.exists():
             try:
                 content += req_file.read_text(encoding="utf-8", errors="ignore").lower()
-            except Exception:
-                pass
+            except Exception as e:
+                logging.warning("%s", e)
         if pyproject.exists():
             try:
                 content += pyproject.read_text(encoding="utf-8", errors="ignore").lower()
-            except Exception:
-                pass
+            except Exception as e:
+                logging.warning("%s", e)
 
         if "fastapi" in content or (dir_path / "app").exists():
             tags.append("FastAPI")
@@ -149,15 +158,29 @@ def _resolve_safe_path(input_path: str) -> Path:
         # Autoriser les chemins situés dans WORKSPACE_ROOT (/Users/.../Code)
         if WORKSPACE_ROOT.resolve() in target.parents or target == WORKSPACE_ROOT.resolve() or target == CURRENT_PROJECT_ROOT.resolve():
             return target
-    except Exception:
-        pass
+    except Exception as e:
+        logging.warning("%s", e)
 
     return CURRENT_PROJECT_ROOT
 
 
-@router.get("/projects", response_model=list[ProjectInfo])
+@router.get(
+    "/projects",
+    response_model=list[ProjectInfo],
+    summary="List all projects in workspace",
+    description="Detect and list all projects available in the parent workspace directory. Includes the current project and sibling projects, with framework detection (Next.js, React, Vue, Python, FastAPI, etc.).",
+    tags=["workspace"],
+    responses={
+        200: {"description": "List of project information returned successfully."},
+    },
+)
 async def list_projects():
-    """Détecte et liste dynamiquement tous les projets disponibles dans l'espace de travail parent."""
+    """Detect and list all projects available in the parent workspace directory.
+
+    Scans the current project root for sub-projects (frontend, backend) and
+    the workspace root for sibling projects. Detects frameworks and tags
+    by examining package.json, requirements.txt, and pyproject.toml.
+    """
     projects: list[ProjectInfo] = []
 
     # 1. Ajouter d'abord les sous-dossiers locaux du projet courant
@@ -197,7 +220,7 @@ async def list_projects():
                     )
                 )
     except Exception as e:
-        pass
+        logging.warning("%s", e)
 
     # 2. Scanner les projets frères dans WORKSPACE_ROOT
     try:
@@ -223,15 +246,37 @@ async def list_projects():
                             last_modified=os.path.getmtime(item),
                         )
                     )
-    except Exception:
-        pass
+    except Exception as e:
+        logging.warning("%s", e)
 
     return projects
 
 
-@router.get("/browse", response_model=BrowseResponse)
+@router.get(
+    "/browse",
+    response_model=BrowseResponse,
+    summary="Browse directory contents",
+    description="Explore the contents of a directory for interactive navigation in the UI. Returns directories, file counts, breadcrumbs, and parent path. Path traversal is prevented by sandboxing to the workspace root.",
+    tags=["workspace"],
+    responses={
+        200: {"description": "Directory contents returned successfully."},
+        403: {"description": "Permission denied to read this directory."},
+        404: {"description": "Directory not found."},
+    },
+)
 async def browse_directory(path: str = Query(default=".")):
-    """Explore le contenu d'un dossier pour permettre une navigation interactive dans l'UI."""
+    """Explore the contents of a directory for interactive navigation in the UI.
+
+    Args:
+        path: Directory path relative to the current project root. Defaults to ".".
+
+    Returns:
+        BrowseResponse with directories, file counts, breadcrumbs, and parent path.
+
+    Raises:
+        HTTPException 403: If permission is denied to read the directory.
+        HTTPException 404: If the directory does not exist.
+    """
     target_dir = _resolve_safe_path(path)
 
     if not target_dir.exists() or not target_dir.is_dir():
@@ -246,7 +291,8 @@ async def browse_directory(path: str = Query(default=".")):
             display_path = f"./{rel_from_cur}"
         else:
             display_path = rel_from_cur
-    except Exception:
+    except Exception as e:
+        logging.warning("Could not compute relative path: %s", e)
         display_path = str(target_dir)
 
     # Calculer le parent
@@ -256,7 +302,8 @@ async def browse_directory(path: str = Query(default=".")):
         try:
             rel_p = os.path.relpath(p, CURRENT_PROJECT_ROOT)
             parent_path = "." if rel_p == "." else (f"./{rel_p}" if not rel_p.startswith(".") else rel_p)
-        except Exception:
+        except Exception as e:
+            logging.warning("Could not compute parent path: %s", e)
             parent_path = str(p)
 
     # Construire les breadcrumbs
@@ -273,10 +320,12 @@ async def browse_directory(path: str = Query(default=".")):
             try:
                 part_rel = os.path.relpath(accumulated, CURRENT_PROJECT_ROOT)
                 part_display = "." if part_rel == "." else (f"./{part_rel}" if not part_rel.startswith(".") else part_rel)
-            except Exception:
+            except Exception as e:
+                logging.warning("Could not compute part path: %s", e)
                 part_display = str(accumulated)
             breadcrumbs.append({"name": part, "path": part_display})
-    except Exception:
+    except Exception as e:
+        logging.warning("Could not compute breadcrumbs: %s", e)
         breadcrumbs.append({"name": target_dir.name or str(target_dir), "path": display_path})
 
     directories: list[DirectoryItem] = []
@@ -292,15 +341,16 @@ async def browse_directory(path: str = Query(default=".")):
             try:
                 rel_entry = os.path.relpath(entry, CURRENT_PROJECT_ROOT)
                 entry_display = f"./{rel_entry}" if not rel_entry.startswith(".") else rel_entry
-            except Exception:
+            except Exception as e:
+                logging.warning("Could not compute entry path: %s", e)
                 entry_display = str(entry)
 
             if entry.is_dir():
                 has_subdirs = False
                 try:
                     has_subdirs = any(p.is_dir() and not p.name.startswith(".") for p in entry.iterdir())
-                except Exception:
-                    pass
+                except Exception as e:
+                    logging.warning("%s", e)
 
                 directories.append(
                     DirectoryItem(
