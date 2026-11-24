@@ -30,7 +30,7 @@
 ┌─────────────────────────────────────────────────┐
 │  Étape 1/3  ───────●──────────○────────○        │
 │                                                  │
-│  🎯  Que souhaitez-vous automatiser ?            │
+│      Que souhaitez-vous automatiser ?            │
 │                                                  │
 │  [  Code Review  ]  [  Architecture  ]           │
 │  [  Testing      ]  [  Documentation           ] │

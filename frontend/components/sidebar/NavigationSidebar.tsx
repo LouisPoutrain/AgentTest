@@ -192,7 +192,7 @@ export function NavigationSidebar({
         </div>
         <div className="flex items-center justify-center gap-1.5 text-[10px] text-text-tertiary font-medium tracking-wide">
           <Zap className="h-3 w-3 text-accent" />
-          <span>Agent Zouglou v2.0</span>
+          <span>Agent Test v2.0</span>
         </div>
       </div>
     </div>

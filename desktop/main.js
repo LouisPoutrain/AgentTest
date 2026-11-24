@@ -39,7 +39,7 @@ async function createWindow() {
     width: 1280,
     height: 800,
     titleBarStyle: 'hiddenInset',
-    title: 'Agent Zouglou',
+    title: 'Agent Test',
     icon: path.join(__dirname, 'icon.png'),
     webPreferences: {
       nodeIntegration: false,

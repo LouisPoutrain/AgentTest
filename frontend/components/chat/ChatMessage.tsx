@@ -129,7 +129,7 @@ export function ChatMessageComponent({ message, isStreaming }: ChatMessageProps)
           {/* Header */}
           <div className="flex items-center gap-2">
             <span className="font-semibold text-sm text-text-primary">
-              Agent Zouglou
+              Agent Test
             </span>
             <span className="text-[10px] text-text-tertiary font-medium">
               {new Date(message.timestamp).toLocaleTimeString("fr-FR", {

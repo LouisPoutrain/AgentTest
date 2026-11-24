@@ -11,7 +11,7 @@ interface HeaderProps {
   className?: string;
 }
 
-export function Header({ title = "Agent Zouglou", logo, actions, className }: HeaderProps) {
+export function Header({ title = "Agent Test", logo, actions, className }: HeaderProps) {
   return (
     <header className={cn(
       "h-14 border-b border-border bg-bg-secondary/80 backdrop-blur-md flex items-center justify-between px-4 md:px-6 sticky top-0 z-50",

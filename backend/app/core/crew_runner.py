@@ -144,8 +144,8 @@ class QueueLogHandler(logging.Handler):
                 return
             
             # Si le log contient le payload complet, on le simplifie pour le frontend
-            if "🚀 LITELLM KWARGS JSON:" in msg or "🚀 LITELLM KWARGS (non-json):" in msg:
-                self.log_queue.put("🧠 L'agent réfléchit (Requête envoyée au LLM)...")
+            if "LITELLM KWARGS JSON:" in msg or "LITELLM KWARGS (non-json):" in msg:
+                self.log_queue.put("L'agent réfléchit (Requête envoyée au LLM)...")
                 return
                 
             self.log_queue.put(msg)
@@ -216,7 +216,7 @@ class CrewExecutionService:
                     if q:
                         q.put(json.dumps({"type": "step", "status": "running", "log": log_text}))
                     else:
-                        log_queue.put(f"🧠 [Réflexion] {log_text}")
+                        log_queue.put(f"[Réflexion] {log_text}")
             except Exception:
                 pass
 
@@ -440,7 +440,7 @@ def run_multi_crew(
 
             yield service._make_chunk(
                 "log",
-                f"🔗 [Étape {idx + 1}/{len(crew_names)}] Exécution du crew {crew_name}...",
+                f"[Étape {idx + 1}/{len(crew_names)}] Exécution du crew {crew_name}...",
                 crewName=crew_name,
             )
 
@@ -479,7 +479,7 @@ def run_multi_crew(
 
             yield service._make_chunk(
                 "log",
-                f"✅ [Étape {idx + 1}/{len(crew_names)}] Crew {crew_name} terminé.",
+                f"[Étape {idx + 1}/{len(crew_names)}] Crew {crew_name} terminé.",
                 crewName=crew_name,
             )
 
@@ -488,7 +488,7 @@ def run_multi_crew(
         for crew_name in crew_names:
             yield service._make_chunk(
                 "log",
-                f"⚡ [Parallèle] Préparation du crew {crew_name}...",
+                f"[Parallèle] Préparation du crew {crew_name}...",
                 crewName=crew_name,
             )
 
@@ -570,9 +570,9 @@ def run_multi_crew(
         aggregated = "\n\n=== Résultat Agrégé ===\n\n"
         for name in crew_names:
             if name in errors:
-                aggregated += f"❌ **{name}** : {errors[name]}\n\n"
+                aggregated += f"[Erreur] **{name}** : {errors[name]}\n\n"
             else:
-                aggregated += f"📋 **{name}**\n---\n"
+                aggregated += f"**{name}**\n---\n"
                 # Extract result from last chunk
                 for chunk in reversed(all_chunks[name]):
                     try:

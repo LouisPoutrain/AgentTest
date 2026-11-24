@@ -15,7 +15,7 @@ export function Footer({ className }: FooterProps) {
     )}>
       <div className="flex items-center gap-1.5">
         <Zap className="h-3 w-3 text-accent" />
-        <span>© {new Date().getFullYear()} Agent Zouglou. Tous droits réservés.</span>
+        <span>© {new Date().getFullYear()} Agent Test. Tous droits réservés.</span>
       </div>
     </footer>
   );

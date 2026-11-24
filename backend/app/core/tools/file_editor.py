@@ -133,7 +133,7 @@ class FileEditorTool(BaseTool):
                         rel_path = item.relative_to(PROJECT_ROOT)
                     except ValueError:
                         rel_path = item.relative_to(WORKSPACE_ROOT)
-                    prefix = "📁 " if item.is_dir() else "📄 "
+                    prefix = "[DIR] " if item.is_dir() else "[FILE] "
                     items.append(f"{prefix}{rel_path}")
                 
                 return "Contenu du répertoire :\n" + "\n".join(items)

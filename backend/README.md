@@ -1,10 +1,10 @@
-# Agent Zouglou — Backend API
+# Agent Test — Backend API
 
-Documentation de l'API **FastAPI** d'Agent Zouglou. Pour une vue d'ensemble du projet, l'installation et le quick start, consultez le [README racine](../README.md).
+Documentation de l'API **FastAPI** d'Agent Test. Pour une vue d'ensemble du projet, l'installation et le quick start, consultez le [README racine](../README.md).
 
 Cette API est conçue pour orchestrer des agents IA (Crews) et gérer des interactions complexes via un routeur intelligent.
 
-## 📋 Table des Matières
+## Table des Matières
 
 - [Architecture](#architecture)
 - [Installation](#installation)
@@ -16,7 +16,7 @@ Cette API est conçue pour orchestrer des agents IA (Crews) et gérer des intera
   - [Espace de Travail](#espace-de-travail)
 - [Sécurité](#sécurité)
 
-## 🏗️ Architecture
+## Architecture
 
 L'API repose sur plusieurs modules clés :
 
@@ -25,7 +25,7 @@ L'API repose sur plusieurs modules clés :
 3. **Espace de Travail (`app/api/workspace.py`)** : Fournit des outils pour naviguer dans le système de fichiers et détecter automatiquement les projets (Next.js, React, Python, etc.).
 4. **Historique (`app/core/history_manager.py`)** : Gère la persistance des conversations par session.
 
-## 🚀 Installation
+## Installation
 
 1. Depuis la racine du projet, créez l'environnement virtuel et installez les dépendances :
    ```bash
@@ -45,7 +45,7 @@ L'API repose sur plusieurs modules clés :
    PYTHONPATH=backend .venv/bin/uvicorn app.main:app --reload --port 8000
    ```
 
-## ⚙️ Configuration
+## Configuration
 
 L'application nécessite les variables d'environnement suivantes pour fonctionner correctement :
 
@@ -55,7 +55,7 @@ L'application nécessite les variables d'environnement suivantes pour fonctionne
 | `LLM_BASE_URL` | URL de base de l'API LLM | - |
 | `ALLOWED_ORIGINS` | Origines CORS autorisées | `localhost:3000` |
 
-## 🌐 API Endpoints
+## API Endpoints
 
 L'API expose plusieurs points d'entrée sous le préfixe `/api`.
 
@@ -108,7 +108,7 @@ Préfixe : `/api/workspace`
 - **`GET /projects`** : Détecte et liste les projets dans l'espace de travail. Identifie automatiquement les stacks techniques (Next.js, React, Python, FastAPI, etc.).
 - **`GET /browse`** : Navigation sécurisée dans le système de fichiers. Retourne les répertoires, fichiers et le fil d'Ariane (breadcrumbs).
 
-## 🔒 Sécurité
+## Sécurité
 
 - **CORS** : Configurée dynamiquement via `ALLOWED_ORIGINS`.
 - **Gestion des Erreurs** : Un gestionnaire global retourne des réponses JSON en cas d'erreur 500.

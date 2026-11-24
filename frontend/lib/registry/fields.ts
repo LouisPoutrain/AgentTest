@@ -21,9 +21,9 @@ export interface FieldSchema extends TemplateField {
 export const FIELD_TYPES: Record<FieldType, { label: string; icon: string; multiline: boolean }> = {
   text: { label: "Texte", icon: "A", multiline: false },
   textarea: { label: "Texte long", icon: "¶", multiline: true },
-  path: { label: "Chemin", icon: "📁", multiline: false },
+  path: { label: "Chemin", icon: "/", multiline: false },
   select: { label: "Sélection", icon: "▾", multiline: false },
-  url: { label: "URL", icon: "🔗", multiline: false },
+  url: { label: "URL", icon: "@", multiline: false },
   toggle: { label: "Activation", icon: "⊘", multiline: false },
 };
 

@@ -1,10 +1,10 @@
-# 🎓 InteractiveCourseCreator — Crew de Création de Cours Interactifs Multi-PDF
+# InteractiveCourseCreator — Crew de Création de Cours Interactifs Multi-PDF
 
-## 🎯 Présentation
+## Présentation
 
 Le **InteractiveCourseCreator** transforme un **dossier contenant un ou plusieurs PDF** en un **cours interactif complet** : un site web HTML/CSS/JS autonome avec leçons, exercices, quiz, dark mode et suivi de progression.
 
-### ✅ Ce que ce crew fait :
+### Ce que ce crew fait :
 - **Inventorie** tous les PDF du dossier (recherche récursive, y compris sous-dossiers)
 - **Analyse chaque PDF en profondeur** (en boucle, résumable — un PDF par itération)
 - **Vérifie** que tous les PDF ont bien été analysés (agent dédié)
@@ -16,7 +16,7 @@ Le **InteractiveCourseCreator** transforme un **dossier contenant un ou plusieur
 
 ---
 
-## 🔄 Pipeline (11 agents séquentiels)
+## Pipeline (11 agents séquentiels)
 
 ```
 1. PDFInventory      → 00_pdf_manifest.json          (liste exhaustive des PDF)
@@ -33,12 +33,12 @@ Le **InteractiveCourseCreator** transforme un **dossier contenant un ou plusieur
 11. QualityFixer     → 09_fixes_applied.json         (corrections appliquées si besoin)
 ```
 
-### 🔁 Boucle d'analyse résumable
+### Boucle d'analyse résumable
 L'étape 2 (PDFAnalyst) traite les PDF **un par un** et sauvegarde chaque analyse dans
 `01_analysis_<slug>.json`. Si l'agent atteint sa limite d'itérations, **relancer le crew
 reprend là où il s'est arrêté** : les PDF déjà analysés sont détectés et sautés.
 
-### 🛡️ Vérification de qualité
+### Vérification de qualité
 - **AnalysisVerifier** (étape 3) : garantit qu'aucun PDF n'a été oublié avant de continuer.
 - **QualityReviewer** (étape 10) : audit final sur 5 axes (complétude, précision, cohérence
   pédagogique, qualité technique, UX) avec score 0-100 et statut
@@ -48,7 +48,7 @@ reprend là où il s'est arrêté** : les PDF déjà analysés sont détectés e
 
 ---
 
-## 🚀 Comment déclencher le pipeline
+## Comment déclencher le pipeline
 
 ### Option 1 — Via l'application (chat)
 Donner simplement le chemin du dossier contenant les PDF :
@@ -86,14 +86,14 @@ for chunk in run_crew(
 ### Variables d'entrée
 | Variable | Obligatoire | Description |
 |----------|-------------|-------------|
-| `project_path` | ✅ | Chemin du dossier contenant les PDF (recherche récursive) |
-| `output_dir` | ❌ | Dossier de sortie (défaut : `<project_path>/cours_interactif`) |
-| `pdf_path` | ❌ | PDF principal (optionnel — le crew détecte tout seul) |
-| `pdf_alternatives` | ❌ | Autres PDF (optionnel — le crew détecte tout seul) |
+| `project_path` | Requis | Chemin du dossier contenant les PDF (recherche récursive) |
+| `output_dir` | Optionnel | Dossier de sortie (défaut : `<project_path>/cours_interactif`) |
+| `pdf_path` | Optionnel | PDF principal (optionnel — le crew détecte tout seul) |
+| `pdf_alternatives` | Optionnel | Autres PDF (optionnel — le crew détecte tout seul) |
 
 ---
 
-## 📁 Structure de sortie
+## Structure de sortie
 
 ```
 <dossier>/cours_interactif/
@@ -108,7 +108,7 @@ for chunk in run_crew(
 ├── 07_website_design.json          # Spécification de design
 ├── 08_review_report.json           # Rapport qualité (scores, corrections)
 ├── 09_fixes_applied.json           # Corrections appliquées par le QualityFixer
-├── index.html                      # 🏠 Page d'accueil du cours
+├── index.html                      # Page d'accueil du cours
 ├── modules/
 │   └── module-NN-nom.html          # Une page par module
 ├── exercises/
@@ -127,7 +127,7 @@ for chunk in run_crew(
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 - **Fichier du crew** : `backend/config/crews/InteractiveCourseCreator.yaml`
 - **Modèles** : chaque agent a `llm: "openai/"` (préfixe LiteLLM) — le modèle effectif
@@ -137,7 +137,7 @@ for chunk in run_crew(
 - **Outil dédié** : `list_pdfs` (recherche récursive des PDF) dans
   `backend/app/tools/custom_tools.py`, enregistré dans `tool_registry.py`.
 
-## ⏱️ Temps d'exécution estimé
+## Temps d'exécution estimé
 
 | Phase | Durée estimée |
 |-------|---------------|
@@ -150,7 +150,7 @@ for chunk in run_crew(
 | Revue + corrections | 5-10 min |
 | **Total (3-5 PDF)** | **~30-70 min** |
 
-## 📝 Tests
+## Tests
 
 ```bash
 PYTHONPATH=backend .venv/bin/pytest backend/tests/test_agent_parser.py --tb=short

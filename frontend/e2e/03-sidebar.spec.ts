@@ -40,6 +40,6 @@ test.describe("Sidebar — Conversations", () => {
   });
 
   test("sidebar affiche la version", async ({ page }) => {
-    await expect(page.getByText("Agent Zouglou v2.0")).toBeVisible();
+    await expect(page.getByText("Agent Test v2.0")).toBeVisible();
   });
 });

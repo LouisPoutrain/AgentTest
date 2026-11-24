@@ -1,4 +1,4 @@
-# Plan de Test — Agent Zouglou
+# Plan de Test — Agent Test
 
 > **Périmètre** : Intégration Frontend ↔ Backend + Fonctionnement autonome du Frontend
 > **Prérequis** : Backend (`uvicorn`) + Frontend (`next dev`) + (optionnel) Desktop (`electron`) lancés
@@ -46,7 +46,7 @@
 |---|------|---------|-----------------|
 | 3.1 | **Message simple (default)** | `POST /api/chat` `{ "crew_name": "default", "message": "Bonjour" }` | SSE stream avec chunks `session_info` → `log` → `result` |
 | 3.2 | **Chunk session_info** | Parser le premier chunk SSE | `{ "type": "session_info", "content": "<uuid>", "session_id": "<uuid>" }` |
-| 3.3 | **Chunk log** | Parser un chunk intermédiaire | `{ "type": "log", "content": "💡 [Réflexion] ...", "timestamp": "..." }` |
+| 3.3 | **Chunk log** | Parser un chunk intermédiaire | `{ "type": "log", "content": "[Réflexion] ...", "timestamp": "..." }` |
 | 3.4 | **Chunk result** | Parser le dernier chunk | `{ "type": "result", "content": "Réponse finale...", "timestamp": "..." }` |
 | 3.5 | **Chunk error** | Envoyer un message qui provoque une erreur LLM | `{ "type": "error", "content": "Message d'erreur...", "timestamp": "..." }` |
 | 3.6 | **Abort du stream** | Envoyer le message, puis appeler `controller.abort()` | Le stream s'arrête proprement, pas d'exception côté frontend |
@@ -103,7 +103,7 @@
 | 5.8 | **Affichage messages** | `ChatWindow` | Les messages utilisateur (`role: "user"`) et assistant (`role: "assistant"`) s'affichent |
 | 5.9 | **Message utilisateur** | Taper un message + Enter | Le message apparaît immédiatement dans le chat |
 | 5.10 | **Streaming en temps réel** | Envoyer un message | Les chunks SSE apparaissent progressivement (pas d'attente de fin) |
-| 5.11 | **Type log** | Chunk `{ "type": "log", "content": "🧠 [Routeur]..." }` | Affiché avec un style de log (couleur/icone différente) |
+| 5.11 | **Type log** | Chunk `{ "type": "log", "content": "[Routeur]..." }` | Affiché avec un style de log (couleur/icone différente) |
 | 5.12 | **Type result** | Chunk `{ "type": "result", "content": "..." }` | Affiché comme le contenu principal de la réponse |
 | 5.13 | **Type error** | Chunk `{ "type": "error", "content": "..." }` | Préfixé de "**Erreur:**" et stylisé en rouge |
 | 5.14 | **Scroll auto** | Pendant le streaming | Le chat scroll automatiquement vers le bas |
@@ -134,7 +134,7 @@
 | 5.29 | **Toggle dark/light** | Bouton `ThemeToggle` | Le thème change immédiatement, persiste au reload |
 | 5.30 | **Icône adaptative** | `ThemeToggle` | Soleil en mode dark, lune en mode light |
 | 5.31 | **Responsive layout** | Redimensionner la fenêtre | Sidebar + ChatWindow s'adaptent (flex layout) |
-| 5.32 | **Header** | `Header` | Titre "Agent Zouglou" + bouton theme + boutons crew/model |
+| 5.32 | **Header** | `Header` | Titre "Agent Test" + bouton theme + boutons crew/model |
 
 ---
 
@@ -173,7 +173,7 @@
 | 8.1 | **Lancement** | `cd desktop && npm start` | Backend + Frontend lancés, Electron ouvert sur l'UI |
 | 8.2 | **Healthcheck Electron** | Pendant le boot | L'UI attend que `/api/health` soit ready avant d'afficher |
 | 8.3 | **Fermeture propre** | Fermer la fenêtre Electron | Backend + Frontend killés (tree-kill), ports 8000/3000 libérés |
-| 8.4 | **Icone dock** | macOS dock | L'icône ronde "Agent Zouglou" affichée |
+| 8.4 | **Icone dock** | macOS dock | L'icône ronde "Agent Test" affichée |
 
 ---
 

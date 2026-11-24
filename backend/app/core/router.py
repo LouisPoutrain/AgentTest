@@ -363,17 +363,17 @@ def route_request(
             break
 
         elif action == "call_tool" and tool_name:
-            log_msg = f"🔧 [Outil] {tool_name}: {json.dumps(tool_args, ensure_ascii=False)}"
+            log_msg = f"[Outil] {tool_name}: {json.dumps(tool_args, ensure_ascii=False)}"
             intermediate_logs.append(log_msg)
 
             tool_result = _execute_tool(tool_name, tool_args)
-            result_log = f"📋 [Résultat {tool_name}] {tool_result[:500]}{'...' if len(tool_result) > 500 else ''}"
+            result_log = f"[Résultat {tool_name}] {tool_result[:500]}{'...' if len(tool_result) > 500 else ''}"
             intermediate_logs.append(result_log)
 
             tool_results_context += f"\n## Outil: {tool_name}\nRésultat: {tool_result}\n"
 
         elif action == "call_crew" and crew_name:
-            log_msg = f"🚀 [Crew] {crew_name}: {json.dumps(crew_inputs, ensure_ascii=False)}"
+            log_msg = f"[Crew] {crew_name}: {json.dumps(crew_inputs, ensure_ascii=False)}"
             intermediate_logs.append(log_msg)
 
             # Fusionner le contexte UI (project_path / folderContext) pour que
@@ -407,7 +407,7 @@ def route_request(
 
         else:
             # Action non reconnue → fallback direct_reply
-            intermediate_logs.append(f"⚠️ [Action inconnue] {action}")
+            intermediate_logs.append(f"[Action inconnue] {action}")
             final_result = {
                 "thought": thought or "Action non reconnue",
                 "action": "direct_reply",

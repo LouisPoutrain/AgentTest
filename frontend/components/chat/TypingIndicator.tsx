@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
  * A status indicator shown while the assistant is processing a user message.
  *
  * Renders a small brain icon followed by three animated dots and the French
- * label "Agent Zouglou réfléchit..." to signal that a response is being
+ * label "Agent Test réfléchit..." to signal that a response is being
  * generated. It is placed inside the chat message list between the last user
  * message and the incoming streamed content.
  *
@@ -44,7 +44,7 @@ export function TypingIndicator() {
             />
           </div>
           <span className="text-xs text-text-secondary italic font-medium">
-            Agent Zouglou réfléchit...
+            Agent Test réfléchit...
           </span>
         </div>
       </div>

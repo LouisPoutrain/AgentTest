@@ -1,10 +1,10 @@
-# AGENTS.md — Agent Zouglou (AgentTest)
+# AGENTS.md — Agent Test (AgentTest)
 
 AI Orchestration Platform powered by **FastAPI + CrewAI** (Backend), **Next.js 16 + React 19 + Tailwind v4** (Frontend), and **Electron 32** (Desktop).
 
 ---
 
-## ⚡ Essential Commands
+## Essential Commands
 
 ### Development Servers
 - **Backend**: `cd backend && ../.venv/bin/uvicorn app.main:app --reload --port 8000` (or from root: `PYTHONPATH=backend .venv/bin/uvicorn app.main:app --reload --port 8000`)
@@ -20,7 +20,7 @@ AI Orchestration Platform powered by **FastAPI + CrewAI** (Backend), **Next.js 1
 
 ---
 
-## 🧭 Cognitive Protocol: Error Prevention & Quality
+## Cognitive Protocol: Error Prevention & Quality
 
 Follow this 4-step execution loop for every task to avoid hallucinations and regressions:
 
@@ -46,7 +46,7 @@ Follow this 4-step execution loop for every task to avoid hallucinations and reg
 
 ---
 
-## 🛑 Hard Guardrails & Known Pitfalls (The "Never Do" List)
+## Hard Guardrails & Known Pitfalls (The "Never Do" List)
 
 ### 1. Python & Environment
 - **NEVER** use system `python` or system `pytest`. Always use `.venv/bin/python` and `.venv/bin/pytest` (located at repository root).
@@ -75,7 +75,7 @@ Follow this 4-step execution loop for every task to avoid hallucinations and reg
 
 ---
 
-## 🏗️ Architecture & Component Map
+## Architecture & Component Map
 
 ```
 AgentTest/
@@ -118,7 +118,7 @@ AgentTest/
 
 ---
 
-## 🛠️ Adding or Modifying a Crew
+## Adding or Modifying a Crew
 
 Crews are declaratively defined in `backend/config/crews/<Crew_Name>.yaml`:
 
@@ -148,7 +148,7 @@ When creating a new crew, register it in `backend/config/capabilities.json` if c
 
 ---
 
-## 🔐 Environment Configuration
+## Environment Configuration
 
 Stored in `backend/.env` (never commit secret values):
 - `LLM_API_KEY`: API key for LLM provider (LiteLLM / OpenAI / local proxy).
@@ -158,7 +158,7 @@ Stored in `backend/.env` (never commit secret values):
 - `PROJECT_ROOT`: Root workspace directory (defaults to repository root).
 - `SESSIONS_DB`: Path to SQLite database (`sessions.db`).
 
-## 🎨 UI/UX & Design Sourcing Protocol
+## UI/UX & Design Sourcing Protocol
 
 L'objectif est d'avoir une UI de niveau "Premium SaaS". Ne génère JAMAIS de design Tailwind basique de ton propre chef.
 

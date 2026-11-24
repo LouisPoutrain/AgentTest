@@ -1170,7 +1170,7 @@ def wikipedia_search(query: str, sentences: int = 5, auto_suggest: bool = True) 
         for link in best_page.links[:20]:
             result += f"- {link}\n"
 
-        result += f"\n📖 [Lire l'article complet]({best_page.url})"
+        result += f"\n[Lire l'article complet]({best_page.url})"
         return result
 
     except wikipedia.exceptions.DisambiguationError as e:
@@ -1266,7 +1266,7 @@ def web_scrape(url: str, max_length: int = 10000) -> str:
 
     try:
         response = requests.get(url, timeout=15, headers={
-            "User-Agent": "Mozilla/5.0 (compatible; AgentZouglou/1.0)"
+            "User-Agent": "Mozilla/5.0 (compatible; AgentTest/1.0)"
         })
         try:
             response.raise_for_status()
@@ -1370,7 +1370,7 @@ def youtube_transcript(video_id: str, languages: list[str] = None) -> str:
                 full_text.append(f"[{minutes:02d}:{seconds:02d}] {text}")
 
         result = (
-            f"## 📺 Transcription YouTube\n"
+            f"## Transcription YouTube\n"
             f"Langue détectée : {detected_lang}\n"
             f"Nombre de segments : {len(full_text)}\n\n"
             + "\n".join(full_text[:5000])  # Limiter pour éviter les dépassements
@@ -1499,7 +1499,7 @@ def _html_template_default(title: str, content: str) -> str:
 </head>
 <body>
 <h1>{title}</h1>
-<div class="meta">Généré par Agent Zouglou</div>
+<div class="meta">Généré par Agent Test</div>
 {content}
 </body>
 </html>"""
@@ -1543,7 +1543,7 @@ def _html_template_academic(title: str, content: str) -> str:
 </head>
 <body>
 <h1>{title}</h1>
-<div class="meta">Rapport académique — Généré par Agent Zouglou</div>
+<div class="meta">Rapport académique — Généré par Agent Test</div>
 {content}
 </body>
 </html>"""

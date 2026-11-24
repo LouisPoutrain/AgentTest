@@ -80,7 +80,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       <div className="flex-1 space-y-1.5 overflow-hidden">
         <div className="flex items-center gap-2">
           <span className="font-semibold text-sm text-text-primary">
-            {isUser ? "Vous" : "Agent Zouglou"}
+            {isUser ? "Vous" : "Agent Test"}
           </span>
           <span className="text-[10px] text-text-tertiary font-medium">
             {new Date(message.timestamp).toLocaleTimeString("fr-FR", {

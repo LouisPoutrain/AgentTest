@@ -1,21 +1,21 @@
-# 📚 EducationalContentCreator - Crew de Génération de Contenu Éducatif Progressif
+# EducationalContentCreator - Crew de Génération de Contenu Éducatif Progressif
 
-## 🎯 Présentation
+## Présentation
 
 Le **EducationalContentCreator** est un crew spécialisé conçu pour transformer des papers de recherche et des dépôts GitHub en **contenu éducatif progressif** (HTML + PDF) expliquant les technologies de A à Z.
 
-### 📋 Ce que ce crew fait pour vous :
+### Ce que ce crew fait pour vous :
 
-✅ **Recherche académique** : Trouve les papers les plus pertinents (2023-2025) et les dépôts GitHub de référence
-✅ **Structure pédagogique** : Organise le contenu en 5 niveaux progressifs (Introduction → Fondamentaux → Avancé → Pratique → Théorie)
-✅ **Pages HTML interactives** : Génère des pages web modernes avec animations, cartes cliquables et design responsive
-✅ **PDF éducatifs** : Crée des documents imprimables professionnels avec typographie claire
-✅ **Contenu scolaire** : Explications claires, exemples concrets, projets exemples
-✅ **Théorie complète** : Fondements mathématiques et théoriques derrière les technologies
+- **Recherche académique** : Trouve les papers les plus pertinents (2023-2025) et les dépôts GitHub de référence
+- **Structure pédagogique** : Organise le contenu en 5 niveaux progressifs (Introduction → Fondamentaux → Avancé → Pratique → Théorie)
+- **Pages HTML interactives** : Génère des pages web modernes avec animations, cartes cliquables et design responsive
+- **PDF éducatifs** : Crée des documents imprimables professionnels avec typographie claire
+- **Contenu scolaire** : Explications claires, exemples concrets, projets exemples
+- **Théorie complète** : Fondements mathématiques et théoriques derrière les technologies
 
 ---
 
-## 🚀 Utilisation Rapide
+## Utilisation Rapide
 
 ### Étape 1 : Préparer votre dossier d'entrée
 ```bash
@@ -53,7 +53,7 @@ mon-projet-educatif/
 
 ---
 
-## 📖 Structure du Contenu Éducatif
+## Structure du Contenu Éducatif
 
 Le crew génère un contenu organisé en **5 niveaux progressifs** :
 
@@ -102,30 +102,30 @@ Le crew génère un contenu organisé en **5 niveaux progressifs** :
 
 ---
 
-## 🎨 Design des Pages HTML
+## Design des Pages HTML
 
 ### Caractéristiques du design :
 
-🎯 **Design moderne** :
+- **Design moderne** :
 - Gradient violet : `#667eea` à `#764ba2`
 - Polices : Segoe UI, Arial
 - Espacement généreux pour la lisibilité
 - Ombre et profondeur pour un effet 3D
 
-📱 **Responsive** :
+- **Responsive** :
 - Adapté mobile (écrans < 768px)
 - Adapté desktop (écrans > 768px)
 - Barre de progression qui suit le scroll
 - Cartes qui s'adaptent à la taille de l'écran
 
-✨ **Interactif** :
+- **Interactif** :
 - Animations au survol des cartes
 - Barre de progression de l'apprentissage
 - Cartes cliquables pour chaque chapitre
 - Effets de survol (translateY, box-shadow)
 - JavaScript pour les interactions
 
-🎨 **Éléments visuels** :
+- **Éléments visuels** :
 - Badges de difficulté (Débutant/Intermédiaire/Avancé)
 - Couleurs par niveau de difficulté
 - Liens cliquables vers les sources
@@ -134,18 +134,18 @@ Le crew génère un contenu organisé en **5 niveaux progressifs** :
 
 ---
 
-## 📚 Exemple de Contenu Généré
+## Exemple de Contenu Généré
 
 ### Pour le sujet "Large Language Models" :
 
-#### 📄 Page HTML (`state_of_the_art_large_language_models_educational.html`)
-- **Titre** : 📚 Éducation Progressive: Large Language Models
+#### Page HTML (`state_of_the_art_large_language_models_educational.html`)
+- **Titre** : Éducation Progressive: Large Language Models
 - **Sections** : 5 sections principales avec design moderne
 - **Ressources** : 5 papers + 5 dépôts GitHub + tutoriels
 - **Design** : Gradient violet, animations, responsive
 - **Fichier** : ~50-100KB
 
-#### 📄 PDF (`state_of_the_art_large_language_models_educational.pdf`)
+#### PDF (`state_of_the_art_large_language_models_educational.pdf`)
 - **Titre** : Éducation Progressive: Large Language Models
 - **Structure** :
   - Page de couverture
@@ -158,7 +158,7 @@ Le crew génère un contenu organisé en **5 niveaux progressifs** :
 
 ---
 
-## 🔧 Configuration Requise
+## Configuration Requise
 
 ### Dépendances Python :
 ```text
@@ -181,7 +181,7 @@ Le crew utilise les LLMs suivants (choisis stratégiquement) :
 
 ---
 
-## 📝 Exemple de Sortie pour "Transformers"
+## Exemple de Sortie pour "Transformers"
 
 ### Structure de sortie :
 ```
@@ -251,7 +251,7 @@ mon-projet-transformers/
 
 ---
 
-## 💡 Bonnes Pratiques
+## Bonnes Pratiques
 
 ### Pour une recherche efficace :
 1. **Soyez précis** : "Large Language Models 2024" plutôt que "IA"
@@ -273,7 +273,7 @@ mon-projet-transformers/
 
 ---
 
-## 🛠️ Personnalisation
+## Personnalisation
 
 ### Modifier le design HTML :
 Éditez `backend/app/tools/custom_tools.py` et modifiez la variable `html_content` dans `generate_educational_html()` :
@@ -290,7 +290,7 @@ Modifiez `EducationalContentCreator.yaml` et changez les valeurs de `llm` pour c
 
 ---
 
-## 📊 Métriques et Performances
+## Métriques et Performances
 
 ### Temps d'exécution estimé :
 | Phase | Temps | Dépendances |
@@ -316,7 +316,7 @@ Modifiez `EducationalContentCreator.yaml` et changez les valeurs de `llm` pour c
 
 ---
 
-## 🎓 Cas d'Utilisation
+## Cas d'Utilisation
 
 ### Pour les chercheurs :
 - **Veille technologique** : Suivre les avancées récentes
@@ -338,7 +338,7 @@ Modifiez `EducationalContentCreator.yaml` et changez les valeurs de `llm` pour c
 
 ---
 
-## 🔄 Évolution Future
+## Évolution Future
 
 ### Fonctionnalités prévues :
 - [ ] **Traduction automatique** : Traduire le contenu en plusieurs langues
@@ -359,23 +359,23 @@ Si vous souhaitez contribuer, vous pouvez :
 
 ---
 
-## 📞 Support et Dépannage
+## Support et Dépannage
 
 ### Problèmes courants :
 
-**❌ "ModuleNotFoundError: No module named 'fpdf'"**
+**[Erreur] "ModuleNotFoundError: No module named 'fpdf'"**
 → Solution : `pip install fpdf`
 
-**❌ "Erreur de connexion internet"**
+**[Erreur] "Erreur de connexion internet"**
 → Solution : Vérifiez votre connexion, essayez plus tard
 
-**❌ "Le PDF ne s'affiche pas correctement"**
+**[Erreur] "Le PDF ne s'affiche pas correctement"**
 → Solution : Vérifiez la typographie, testez avec Adobe Reader
 
-**❌ "La page HTML n'est pas responsive"**
+**[Erreur] "La page HTML n'est pas responsive"**
 → Solution : Vérifiez les media queries, testez sur mobile
 
-**❌ "Les ressources ne sont pas trouvées"**
+**[Erreur] "Les ressources ne sont pas trouvées"**
 → Solution : Vérifiez les URLs, essayez avec un VPN si bloqué
 
 ### Contacter le support :
@@ -383,7 +383,7 @@ Si vous avez des questions ou des problèmes, contactez le **Méta-Orchestrateur
 
 ---
 
-## 📜 Licence
+## Licence
 
 Ce projet est sous licence **CC-BY-4.0** :
 - Vous êtes libre de partager et adapter le matériel
@@ -392,28 +392,28 @@ Ce projet est sous licence **CC-BY-4.0** :
 
 ---
 
-## 🎉 Conclusion
+## Conclusion
 
 Le **EducationalContentCreator** est un outil puissant pour transformer des papers complexes et des dépôts GitHub en **contenu éducatif progressif** prêt à l'emploi.
 
-### ✅ Ce que vous obtenez :
+### Ce que vous obtenez :
 - Une **page HTML interactive** avec design moderne
 - Un **PDF éducatif** professionnel et imprimable
 - Une **structure pédagogique** claire et progressive
 - Toutes les **sources** bien organisées et référencées
 - Un **rapport complet** sur le sujet demandé
 
-### 🚀 Commencez dès maintenant :
+### Commencez dès maintenant :
 1. Créez un dossier d'entrée vide
 2. Exécutez le crew avec votre sujet
 3. Accédez aux résultats dans le dossier de sortie
 4. Utilisez le contenu pour l'apprentissage, la formation ou la documentation
 
-**Le crew est prêt à générer des contenus éducatifs de qualité professionnelle !** 🎓✨
+**Le crew est prêt à générer des contenus éducatifs de qualité professionnelle !**
 
 ---
 
-## 📚 Annexes
+## Annexes
 
 ### A. Structure des fichiers générés
 Voir la section "Exemple de Sortie" pour la structure complète.
@@ -427,10 +427,10 @@ Voir la section "Exemple de Sortie" pour la structure complète.
 ### C. Comparaison avec d'autres outils
 | Outil | HTML | PDF | Progressif | Théorie | Pratique |
 |-------|------|-----|------------|---------|----------|
-| EducationalContentCreator | ✅ | ✅ | ✅ | ✅ | ✅ |
-| StateOfTheArtCrew | ❌ | ❌ | ❌ | ❌ | ❌ |
-| ChatPDF | ❌ | ✅ | ❌ | ❌ | ❌ |
-| GitHub Wiki | ❌ | ❌ | ❌ | ❌ | ✅ |
+| EducationalContentCreator | Oui | Oui | Oui | Oui | Oui |
+| StateOfTheArtCrew | Non | Non | Non | Non | Non |
+| ChatPDF | Non | Oui | Non | Non | Non |
+| GitHub Wiki | Non | Non | Non | Non | Oui |
 
 ### D. Glossaire
 - **LLM** : Large Language Model

@@ -36,12 +36,12 @@ test.describe("Home Page — Rendering & State", () => {
     await expect(page.locator("main")).toBeVisible();
   });
 
-  test("sidebar affiche le titre Agent Zouglou", async ({ page }) => {
-    await expect(page.getByText("Agent Zouglou")).toBeVisible();
+  test("sidebar affiche le titre Agent Test", async ({ page }) => {
+    await expect(page.getByText("Agent Test")).toBeVisible();
   });
 
   test("version affichée dans la sidebar", async ({ page }) => {
-    await expect(page.getByText("Agent Zouglou v2.0")).toBeVisible();
+    await expect(page.getByText("Agent Test v2.0")).toBeVisible();
   });
 
   test("lien Tableau des Lots est présent", async ({ page }) => {

@@ -16,12 +16,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Agent Zouglou - Interface",
+  title: "Agent Test - Interface",
   description: "Orchestration d'agents IA en temps réel",
 };
 
 /**
- * Root layout for the Agent Zouglou application.
+ * Root layout for the Agent Test application.
  *
  * Provides the font variables, theme provider, query provider,
  * and toast notifications for all child pages.

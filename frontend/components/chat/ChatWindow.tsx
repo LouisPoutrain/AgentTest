@@ -232,7 +232,7 @@ export function ChatWindow({
                       <Bot className="h-8 w-8 text-accent" />
                     </div>
                     <p className="text-sm font-medium text-text-primary mb-1">
-                      Bienvenue sur Agent Zouglou
+                      Bienvenue sur Agent Test
                     </p>
                     <p className="text-xs text-text-tertiary text-center max-w-sm">
                       Posez-moi une question ou ouvrez le panneau latéral pour lancer un Crew manuellement.

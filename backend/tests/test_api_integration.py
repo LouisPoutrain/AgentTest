@@ -557,8 +557,8 @@ class TestChatStream:
             "llm_tier": "balanced",
         }
         mock_chunks = [
-            '{"type": "log", "content": "🚀 [Exécution] Lancement du crew Project_Architect"}',
-            '{"type": "log", "content": "🤖 AgentAlpha: Je travaille..."}',
+            '{"type": "log", "content": "[Exécution] Lancement du crew Project_Architect"}',
+            '{"type": "log", "content": "AgentAlpha: Je travaille..."}',
             '{"type": "result", "content": "Plan d\'architecture généré."}',
         ]
         with patch("app.api.chat.run_crew", return_value=mock_chunks):

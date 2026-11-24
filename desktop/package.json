@@ -1,16 +1,16 @@
 {
-  "name": "agent-zouglou",
-  "productName": "Agent Zouglou",
+  "name": "agent-test",
+  "productName": "Agent Test",
   "version": "0.1.0",
   "main": "main.js",
-  "description": "Desktop Application for Agent Zouglou",
+  "description": "Desktop Application for Agent Test",
   "scripts": {
     "start": "electron .",
     "build": "electron-builder -m"
   },
   "build": {
-    "appId": "com.louispoutrain.agentzouglou",
-    "productName": "Agent Zouglou",
+    "appId": "com.louispoutrain.agenttest",
+    "productName": "Agent Test",
     "mac": {
       "icon": "icon.png",
       "target": "dir"

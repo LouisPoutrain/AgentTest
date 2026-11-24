@@ -117,9 +117,9 @@ def _inject_pdf_inputs(crew_inputs: dict[str, Any], project_path: str):
         crew_inputs["pdf_path"] = pdfs[0]
         if "pdf_alternatives" not in crew_inputs:
             crew_inputs["pdf_alternatives"] = pdfs[1:] if len(pdfs) > 1 else []
-        yield f"data: {_make_chunk('log', f'📄 {len(pdfs)} PDF(s) détecté(s) dans {project_path}')}\n\n"
+        yield f"data: {_make_chunk('log', f'{len(pdfs)} PDF(s) détecté(s) dans {project_path}')}\n\n"
     else:
-        yield f"data: {_make_chunk('log', f'⚠️ Aucun PDF trouvé dans {project_path}')}\n\n"
+        yield f"data: {_make_chunk('log', f'[Attention] Aucun PDF trouvé dans {project_path}')}\n\n"
 
 
 @router.post(
@@ -198,7 +198,7 @@ async def chat(request: ChatRequest):
             # --- MULTI-CREW EXECUTION ---
             if request.crew_names and len(request.crew_names) > 0:
                 mode_label = "séquentiel" if request.execution_mode == "sequential" else "parallèle"
-                yield f"data: {_make_chunk('log', f'🚀 [Mission] Lancement de {len(request.crew_names)} crew(s) en mode {mode_label}')}\n\n"
+                yield f"data: {_make_chunk('log', f'[Mission] Lancement de {len(request.crew_names)} crew(s) en mode {mode_label}')}\n\n"
 
                 for crew_name in request.crew_names:
                     yield f"data: {_make_chunk('log', f'  - {crew_name} [en attente]', crewName=crew_name)}\n\n"
@@ -233,10 +233,10 @@ async def chat(request: ChatRequest):
                     for chunk in _inject_pdf_inputs(crew_inputs, project_path):
                         yield chunk
 
-                yield f"data: {_make_chunk('log', f'🚀 [Exécution Manuelle] Lancement du crew {target_crew_name}')}\n\n"
+                yield f"data: {_make_chunk('log', f'[Exécution Manuelle] Lancement du crew {target_crew_name}')}\n\n"
             else:
                 # --- META-ROUTEUR (ReAct Loop) ---
-                yield f"data: {_make_chunk('log', '🧠 [Routeur] Analyse de votre demande...')}\n\n"
+                yield f"data: {_make_chunk('log', '[Routeur] Analyse de votre demande...')}\n\n"
 
                 route_result = route_request(
                     session_id,
@@ -255,7 +255,7 @@ async def chat(request: ChatRequest):
 
                 # Stream du Thought
                 if thought:
-                    yield f"data: {_make_chunk('log', f'💡 [Réflexion] {thought}')}\n\n"
+                    yield f"data: {_make_chunk('log', f'[Réflexion] {thought}')}\n\n"
 
                 # Stream des logs intermédiaires (outils exécutés)
                 for log in intermediate_logs:
@@ -276,7 +276,7 @@ async def chat(request: ChatRequest):
                         for chunk in _inject_pdf_inputs(crew_inputs, project_path):
                             yield chunk
 
-                    yield f"data: {_make_chunk('log', f'⚡ [Action] Délégation au crew {target_crew_name} (Modèle: {llm_tier})')}\n\n"
+                    yield f"data: {_make_chunk('log', f'[Action] Délégation au crew {target_crew_name} (Modèle: {llm_tier})')}\n\n"
                 else:
                     fallback_msg = "Je n'ai pas pu déterminer l'action appropriée."
                     history_manager.add_message(session_id, role="assistant", content=fallback_msg)
