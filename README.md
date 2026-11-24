@@ -1,4 +1,4 @@
-# Agent Zouglou
+# Agent Test
 
 Plateforme d'orchestration d'agents IA. Un routeur LLM analyse les messages entrants et les oriente vers des équipes d'agents spécialisés (Crews) définies en YAML, avec streaming des logs en temps réel via SSE.
 
