@@ -1,228 +1,153 @@
 # Agent Zouglou
 
-**AI Orchestration Platform** — Chattez avec un meta-routeur intelligent qui dispatche automatiquement vos demandes vers des équipes d'agents spécialisés (Crews), avec streaming SSE en temps réel.
+Plateforme d'orchestration d'agents IA. Un routeur LLM analyse les messages entrants et les oriente vers des équipes d'agents spécialisés (Crews) définies en YAML, avec streaming des logs en temps réel via SSE.
 
-```
-┌─────────────┐     ┌──────────────┐     ┌─────────────────────────┐
-│   Frontend   │────▶│  Meta-Router  │────▶│  Crew 1  ──▶  Crew 2   │
-│  Next.js 16  │◀────│   (FastAPI)   │◀────│  (CrewAI agents + tools)│
-│  React 19    │ SSE │               │     └─────────────────────────┘
-└─────────────┘     └──────────────┘
-       ▲
-       └──── Electron 32 (Desktop app macOS / Windows / Linux)
-```
+## Fonctionnalités
 
----
+- Chat avec routeur LLM : réponse directe, appel d'outil individuel, ou dispatch vers un Crew
+- Crews déclaratifs en YAML (agents, tâches, outils, modèles)
+- Exécution multi-crew (séquentiel ou parallèle)
+- Streaming SSE des logs agents dans l'interface
+- Application desktop Electron (lance backend + frontend)
+- Navigation sécurisée dans un dossier projet (sandbox de chemins)
+- Historique des conversations en SQLite
+- 20+ Crews préconfigurés (SWE, review, tests, sécurité, recherche web, etc.)
 
-## ✨ Features
-
-- **💬 Chat intelligent** — Un routeur LLM analyse chaque message et décide : réponse directe, clarification, outil individuel, ou dispatch vers un Crew
-- **👥 Crews déclaratifs** — Définissez des équipes d'agents en YAML (rôles, goals, backstories, outils, modèles LLM)
-- **🔄 Multi-crew** — Exécutez plusieurs Crews séquentiellement ou en parallèle sur la même demande
-- **📡 Streaming SSE** — Logs en temps réel des agents (pensées, appels d'outils, résultats) directement dans l'UI
-- **🖥️ Desktop app** — Application Electron native qui lance backend + frontend automatiquement
-- **📁 Workspace browsing** — Sélectionnez un dossier projet, l'agent y lit/écrit en toute sécurité (path sandboxing)
-- **🗂️ Historique** — Conversations persistées en SQLite, rechargeables à tout moment
-- **🧩 20+ Crews préconfigurés** — SWE autonome, review, tests, sécurité, recherche web, création de cours, analyse JSON, Git, et plus
-
----
-
-## 🛠️ Stack Technique
+## Stack
 
 | Couche | Technologies |
 |--------|-------------|
-| **Backend** | Python 3.12 · FastAPI · CrewAI · LiteLLM · Pydantic · SQLite |
-| **Frontend** | Next.js 16 · React 19 · Tailwind CSS v4 · Zustand · Framer Motion · shadcn/ui |
-| **Desktop** | Electron 32 · Node.js |
-| **LLM** | Compatible LiteLLM (OpenAI, Gemini, Mistral, Ollama, etc.) |
+| Backend | Python 3.12, FastAPI, CrewAI, LiteLLM, Pydantic, SQLite |
+| Frontend | Next.js 16, React 19, Tailwind CSS v4, Zustand, shadcn/ui |
+| Desktop | Electron 32 |
+| LLM | Tout provider compatible LiteLLM (OpenAI, Mistral, Gemini, Ollama...) |
 
----
+## Installation
 
-## 🚀 Quick Start
-
-### Prérequis
-
-- Python 3.12+
-- Node.js 20+
-- Une clé API LLM (OpenAI, Gemini, Mistral, ou autre provider LiteLLM)
-
-### 1. Cloner le projet
+Prérequis : Python 3.12+, Node.js 20+, une clé API LLM.
 
 ```bash
 git clone <repository-url>
 cd AgentTest
-```
 
-### 2. Configurer le backend
-
-```bash
-# Créer l'environnement virtuel
+# Environnement Python
 python3 -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-
-# Installer les dépendances
+source .venv/bin/activate
 pip install -r backend/requirements.txt
 
-# Configurer les variables d'environnement
+# Configuration
 cp backend/.env.example backend/.env
-# Éditez backend/.env avec votre clé API LLM
+# Renseigner LLM_API_KEY et LLM_BASE_URL dans backend/.env
 ```
 
-### 3. Lancer l'application
+## Lancement
 
-**Option A — Desktop (recommandé)** :
+**Desktop** (recommandé) :
+
 ```bash
 cd desktop
 npm install
 npm start
 ```
-L'app Electron démarre automatiquement le backend (port 8000) et le frontend (port 3000).
 
-**Option B — Manuel (dev)** :
+**Manuel** (développement) :
+
 ```bash
-# Terminal 1 — Backend
+# Terminal 1
 PYTHONPATH=backend .venv/bin/uvicorn app.main:app --reload --port 8000
 
-# Terminal 2 — Frontend
+# Terminal 2
 cd frontend
 npm install
 npm run dev
 ```
-Puis ouvrez [http://localhost:3000](http://localhost:3000).
 
----
+Interface disponible sur http://localhost:3000.
 
-## ⚙️ Configuration
+## Configuration
 
-Créez `backend/.env` à partir de `backend/.env.example` :
+Variables d'environnement dans `backend/.env` (voir [backend/.env.example](backend/.env.example)) :
 
 | Variable | Description | Requis |
 |----------|-------------|--------|
-| `LLM_API_KEY` | Clé API de votre provider LLM | ✅ |
-| `LLM_BASE_URL` | URL de base de l'API LLM (ex: `https://api.openai.com/v1`) | ✅ |
-| `GEMINI_API_KEY` | Clé API Google Gemini (optionnel) | ❌ |
-| `PROJECT_ROOT` | Dossier racine autorisé pour les opérations fichiers | ❌ (défaut: repo) |
-| `ALLOWED_ORIGINS` | Origines CORS autorisées | ❌ (défaut: localhost:3000) |
-| `SESSIONS_DB` | Chemin de la base SQLite | ❌ (défaut: `sessions.db`) |
+| `LLM_API_KEY` | Clé API du provider LLM | oui |
+| `LLM_BASE_URL` | URL de base de l'API LLM | oui |
+| `GEMINI_API_KEY` | Clé Google Gemini | non |
+| `PROJECT_ROOT` | Dossier racine autorisé pour les opérations fichiers | non |
+| `ALLOWED_ORIGINS` | Origines CORS autorisées | non |
+| `SESSIONS_DB` | Chemin de la base SQLite | non |
 
-Voir [backend/.env.example](backend/.env.example) pour le template complet.
-
----
-
-## 📁 Structure du projet
+## Structure
 
 ```
 AgentTest/
-├── backend/                  # API FastAPI + orchestration CrewAI
+├── backend/
 │   ├── app/
-│   │   ├── api/              # Routes: chat (SSE), crews CRUD, models, workspace
-│   │   ├── core/             # Router, crew_runner, crew_manager, path_manager, config
-│   │   ├── schemas/          # Modèles Pydantic
-│   │   └── tools/            # Outils CrewAI sandboxés (fichiers, terminal, web, PDF...)
+│   │   ├── api/          # Routes : chat (SSE), crews, models, workspace
+│   │   ├── core/         # Router, crew_runner, crew_manager, path_manager, config
+│   │   ├── schemas/      # Modèles Pydantic
+│   │   └── tools/        # Outils CrewAI (fichiers, terminal, web, PDF)
 │   ├── config/
-│   │   ├── crews/*.yaml      # 20+ définitions de Crews
-│   │   └── capabilities.json # Routing par mots-clés + model tiers
-│   ├── tests/                # Suite pytest (9 modules)
-│   └── requirements.txt
-├── frontend/                 # Next.js 16 + React 19
-│   ├── app/                  # Pages (chat, lots, lab)
-│   ├── components/
-│   │   ├── chat/             # ChatWindow, CrewLaunchPad, MessageBubble, etc.
-│   │   ├── sidebar/          # NavigationSidebar, CrewConfig
-│   │   └── ui/               # Composants shadcn/ui
-│   ├── e2e/                  # Tests Playwright
-│   └── lib/                  # api.ts (SSE client), store.ts, types.ts
-├── desktop/                  # Electron 32 (main.js lance backend + frontend)
-├── docs/                     # Documentation développeur
-│   └── dev/                  # Notes internes (plans, migrations)
-└── sessions.db               # Historique des conversations (SQLite)
+│   │   ├── crews/        # Définitions YAML des Crews
+│   │   └── capabilities.json
+│   └── tests/            # Tests pytest
+├── frontend/
+│   ├── app/              # Pages Next.js
+│   ├── components/       # chat/, sidebar/, ui/
+│   ├── e2e/              # Tests Playwright
+│   └── lib/              # Client API SSE, store, types
+├── desktop/              # Application Electron
+└── docs/
 ```
 
----
+## Crews
 
-## 🤖 Crews disponibles
+Les Crews sont des fichiers YAML dans `backend/config/crews/`. Pour en ajouter un, copiez un fichier existant et adaptez agents, tâches et settings.
 
-Les Crews sont définis en YAML dans `backend/config/crews/`. Exemples :
+Quelques exemples : `Autonomous_SWE`, `Reviewer`, `Tester`, `Project_Architect`, `Security_Adversary`, `Web_Researcher`, `InteractiveCourseCreator`, `dev_assistant`.
 
-| Crew | Spécialisation |
-|------|---------------|
-| `Autonomous_SWE` | Développement logiciel de bout en bout |
-| `Reviewer` | Audit de code et sécurité |
-| `Tester` | Tests automatisés et détection de régressions |
-| `Project_Architect` | Conception d'architecture et choix de stack |
-| `Refactorer` | Clean code et réduction de dette technique |
-| `Documentaliste` | Documentation technique |
-| `Security_Adversary` | Pentesting et simulation d'attaques |
-| `Web_Researcher` | Recherche web et synthèse |
-| `InteractiveCourseCreator` | Création de cours interactifs depuis des PDF |
-| `dev_assistant` | Assistant développeur généraliste |
-
-Pour créer votre propre Crew, copiez un YAML existant et modifiez-le — aucune code requis.
-
----
-
-## 🌐 API Endpoints
+## API
 
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
-| `GET` | `/api/health` | Health check |
-| `GET` | `/api/models` | Liste des modèles LLM disponibles |
-| `POST` | `/api/chat` | Chat avec streaming SSE (multi-crew supporté) |
-| `GET` | `/api/crews` | Liste des Crews |
-| `GET` | `/api/crews/{name}` | Détails d'un Crew (agents, tâches, settings) |
-| `POST` | `/api/crews` | Créer un Crew |
-| `DELETE` | `/api/crews/{name}` | Supprimer un Crew |
-| `GET` | `/api/workspace/projects` | Lister les projets détectés |
-| `GET` | `/api/workspace/browse` | Navigation sécurisée dans les fichiers |
+| GET | `/api/health` | Health check |
+| GET | `/api/models` | Modèles LLM disponibles |
+| POST | `/api/chat` | Chat avec streaming SSE |
+| GET | `/api/crews` | Liste des Crews |
+| GET | `/api/crews/{name}` | Détail d'un Crew |
+| POST | `/api/crews` | Créer un Crew |
+| DELETE | `/api/crews/{name}` | Supprimer un Crew |
+| GET | `/api/workspace/projects` | Projets détectés |
+| GET | `/api/workspace/browse` | Navigation fichiers sécurisée |
 
-Documentation détaillée : [backend/README.md](backend/README.md) · [backend/docs/api.md](backend/docs/api.md)
+Voir [backend/README.md](backend/README.md) et [backend/docs/api.md](backend/docs/api.md).
 
----
-
-## 🧪 Tests
+## Tests
 
 ```bash
-# Backend (pytest)
+# Backend
 PYTHONPATH=backend .venv/bin/pytest backend/tests --tb=short --maxfail=1
 
-# Frontend (lint)
+# Frontend
 cd frontend && CI=true npm run lint
-
-# Frontend (e2e Playwright)
-cd frontend && npm run test
-
-# Frontend (build)
+cd frontend && npm run test       # e2e Playwright
 cd frontend && CI=true npm run build
 ```
 
----
-
-## 🖥️ Build Desktop
+## Build desktop
 
 ```bash
 cd desktop
-npm install
-npm run build   # Génère les installeurs dans desktop/dist/
+npm run build   # installeurs dans desktop/dist/
 ```
 
----
+## Contribution
 
-## 🤝 Contribuer
+1. Fork, branche (`git checkout -b feature/ma-feature`)
+2. Commit, push, pull request
 
-1. Fork le projet
-2. Créez une branche (`git checkout -b feature/ma-feature`)
-3. Commitez vos changements (`git commit -m 'feat: ma feature'`)
-4. Push (`git push origin feature/ma-feature`)
-5. Ouvrez une Pull Request
+Voir [AGENTS.md](AGENTS.md) pour les conventions du projet.
 
-Consultez [AGENTS.md](AGENTS.md) pour les conventions de code et le protocole de qualité.
+## Licence
 
----
-
-## 📄 Licence
-
-MIT — voir [LICENSE](LICENSE)
-
----
-
-*Développé avec ❤️ et beaucoup de ☕*
+MIT — voir [LICENSE](LICENSE).
